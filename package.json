@@ -1,0 +1,21 @@
+{
+  "name": "audit-prosuma",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Application d'audit de supervision pour les supermarchés Prosuma",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5"
+  }
+}
