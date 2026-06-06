@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { LogOut, Plus, ClipboardList, AlertTriangle, TrendingUp, Building2, Users } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -7,7 +7,8 @@ export default async function DashboardPage() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) redirect("/login");
 
-  const { data: profile } = await supabase
+  const svc = createServiceClient();
+  const { data: profile } = await svc
     .from("profiles")
     .select("full_name, role")
     .eq("id", session.user.id)
@@ -16,7 +17,7 @@ export default async function DashboardPage() {
   const role = profile?.role || "auditeur";
   const isManagerOrAdmin = role === "manager" || role === "admin";
 
-  let auditQuery = supabase.from("audits").select("id, score, magasin_name");
+  let auditQuery = svc.from("audits").select("id, score, magasin_name");
   if (!isManagerOrAdmin) {
     auditQuery = auditQuery.eq("user_id", session.user.id);
   }
@@ -34,7 +35,7 @@ export default async function DashboardPage() {
   let overdueActions = 0;
   if (audits && audits.length > 0) {
     const auditIds = audits.map((a) => a.id);
-    const { count } = await supabase
+    const { count } = await svc
       .from("corrective_actions")
       .select("id", { count: "exact", head: true })
       .in("audit_id", auditIds)

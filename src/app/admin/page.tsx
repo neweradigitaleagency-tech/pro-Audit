@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { ArrowLeft, Users, Building2, ClipboardList, TrendingUp, Upload } from "lucide-react"
 
 export default async function AdminPage() {
@@ -8,7 +8,9 @@ export default async function AdminPage() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect("/login")
 
-  const { data: myProfile } = await supabase
+  const svc = createServiceClient()
+
+  const { data: myProfile } = await svc
     .from("profiles")
     .select("role")
     .eq("id", session.user.id)
@@ -16,21 +18,21 @@ export default async function AdminPage() {
 
   if (!myProfile || myProfile.role !== "admin") redirect("/dashboard")
 
-  const { data: profiles } = await supabase
+  const { data: profiles } = await svc
     .from("profiles")
     .select("id, full_name, role, created_at")
     .order("created_at", { ascending: false })
 
-  const { data: magasins } = await supabase
+  const { data: magasins } = await svc
     .from("magasins")
     .select("id, name, created_at")
     .order("name")
 
-  const { count: totalAudits } = await supabase
+  const { count: totalAudits } = await svc
     .from("audits")
     .select("id", { count: "exact", head: true })
 
-  const { data: latestAudits } = await supabase
+  const { data: latestAudits } = await svc
     .from("audits")
     .select("id, magasin_name, score, created_at")
     .order("created_at", { ascending: false })

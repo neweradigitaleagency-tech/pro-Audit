@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { ZONES, STATUTS, scoreOf, scoreColor, computeCounts } from "@/lib/audit/zones"
 import type { ResultItem } from "@/lib/audit/zones"
 import { ArrowLeft, Download } from "lucide-react"
@@ -11,7 +11,8 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect("/login")
 
-  const { data: profile } = await supabase
+  const svc = createServiceClient()
+  const { data: profile } = await svc
     .from("profiles")
     .select("role")
     .eq("id", session.user.id)
@@ -20,7 +21,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
   const role = profile?.role || "auditeur"
   const isManagerOrAdmin = role === "manager" || role === "admin"
 
-  let query = supabase
+  let query = svc
     .from("audits")
     .select("id, user_id, magasin_name, superviseur, responsable, date, heure, results, custom_items, counts, score, status, created_at")
     .eq("id", id)

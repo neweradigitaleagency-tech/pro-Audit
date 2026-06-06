@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { getProfileRole, getFinalAudits, resolveAction } from "./server-actions"
 import { ZONES, STATUTS, getDeadlineBadge } from "@/lib/audit/zones"
 import type { ResultItem } from "@/lib/audit/zones"
 import { ArrowLeft, Filter } from "lucide-react"
@@ -41,25 +42,10 @@ export default function ActionsPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", session.user.id)
-        .single()
+      const role = await getProfileRole(session.user.id)
+      const isManagerOrAdmin = role === "manager" || role === "admin"
 
-      const isManagerOrAdmin = profile?.role === "manager" || profile?.role === "admin"
-
-      let query = supabase
-        .from("audits")
-        .select("id, magasin_name, date, results, status")
-        .eq("status", "final")
-        .order("date", { ascending: false })
-
-      if (!isManagerOrAdmin) {
-        query = query.eq("user_id", session.user.id)
-      }
-
-      const { data: audits } = await query
+      const audits = await getFinalAudits(session.user.id, isManagerOrAdmin)
       if (!audits) { setLoading(false); return }
 
       const mags = new Set<string>()
@@ -102,23 +88,7 @@ export default function ActionsPage() {
 
   async function markResolved(auditId: string, itemId: string) {
     try {
-      const supabase = createClient()
-      const { data: audit } = await supabase
-        .from("audits")
-        .select("results")
-        .eq("id", auditId)
-        .single()
-
-      if (!audit) return
-      const results = { ...(audit.results as Record<string, ResultItem>) }
-      if (results[itemId]) {
-        results[itemId] = { ...results[itemId], resolved: true }
-      }
-
-      await supabase
-        .from("audits")
-        .update({ results: JSON.parse(JSON.stringify(results)) })
-        .eq("id", auditId)
+      await resolveAction(auditId, itemId)
 
       setActions(prev => prev.map(a =>
         a.auditId === auditId && a.itemId === itemId

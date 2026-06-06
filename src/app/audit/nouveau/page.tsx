@@ -25,6 +25,7 @@ export default function NewAuditPage() {
   const [selectedCat, setSelectedCat] = useState<string | null>(null)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
   const [auditId, setAuditId] = useState<string | null>(null)
   const [magasins, setMagasins] = useState<string[]>([])
   const [newCustomCat, setNewCustomCat] = useState("Autre")
@@ -151,11 +152,7 @@ export default function NewAuditPage() {
     const counts = computeCounts(results)
     const score = scoreOf(results)
     try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
       const payload = {
-        user_id: session.user.id,
         magasin_name: header.magasin,
         superviseur: header.superviseur,
         responsable: header.responsable,
@@ -168,10 +165,21 @@ export default function NewAuditPage() {
         status: "draft" as const,
       }
       if (auditId) {
-        await supabase.from("audits").update(payload).eq("id", auditId)
+        const res = await fetch("/api/audits", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, id: auditId }),
+        });
+        if (!res.ok) { const d = await res.json(); console.error("saveDraft error", d.error); return; }
       } else {
-        const { data } = await supabase.from("audits").insert(payload).select("id").single()
-        if (data) setAuditId(data.id)
+        const res = await fetch("/api/audits", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) { const d = await res.json(); console.error("saveDraft error", d.error); return; }
+        const d = await res.json();
+        if (d.id) setAuditId(d.id)
       }
     } catch (e) { console.error("saveDraft error", e) }
   }
@@ -181,11 +189,7 @@ export default function NewAuditPage() {
     const counts = computeCounts(results)
     const score = scoreOf(results)
     try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
       const payload = {
-        user_id: session.user.id,
         magasin_name: header.magasin,
         superviseur: header.superviseur,
         responsable: header.responsable,
@@ -198,13 +202,26 @@ export default function NewAuditPage() {
         status: "final" as const,
       }
       if (auditId) {
-        await supabase.from("audits").update(payload).eq("id", auditId)
+        const res = await fetch("/api/audits", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, id: auditId }),
+        });
+        if (!res.ok) { const d = await res.json(); setError(d.error); setSaving(false); return; }
       } else {
-        const { data } = await supabase.from("audits").insert(payload).select("id").single()
-        if (data) setAuditId(data.id)
+        const res = await fetch("/api/audits", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) { const d = await res.json(); setError(d.error); setSaving(false); return; }
+        const d = await res.json();
+        if (d.id) setAuditId(d.id)
       }
       setPage("summary")
-    } catch (e) { console.error("saveFinal error", e) }
+    } catch (e) {
+      setError(`Erreur de sauvegarde: ${e instanceof Error ? e.message : "Vérifie ta connexion"}`);
+    }
     finally { setSaving(false) }
   }
 
@@ -352,6 +369,12 @@ export default function NewAuditPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div style={{ fontSize:12, color:"#dc2626", background:"#fee2e2", padding:"8px 12px", borderRadius:6, marginBottom:12 }}>
+          {error}
+        </div>
+      )}
 
       <div style={{ height:6, background:"#f3f4f6", borderRadius:3, marginBottom:12 }}>
         <div style={{ height:6, borderRadius:3, background:"#ED7D31", width:`${progressPct}%` }} />
