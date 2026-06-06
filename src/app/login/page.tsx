@@ -17,24 +17,25 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const supabase = createClient();
-
-      const fn = mode === "login"
-        ? supabase.auth.signInWithPassword({ email, password })
-        : supabase.auth.signUp({ email, password, options: { data: { role: "auditeur" } } });
-
-      const { error: err } = await fn;
-      if (err) { setError(err.message); setLoading(false); return; }
-
       if (mode === "login") {
+        const supabase = createClient();
+        const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+        if (err) { setError(err.message); setLoading(false); return; }
         router.push("/dashboard");
         router.refresh();
       } else {
-        setError("Inscription réussie ! Vérifiez votre email pour confirmer.");
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setError(data.error); setLoading(false); return; }
+        setError("Inscription réussie ! Connecte-toi maintenant.");
         setMode("login");
       }
     } catch (e) {
-      setError(`Erreur de connexion: ${e instanceof Error ? e.message : "Vérifie ta connexion"}`);
+      setError(`Erreur: ${e instanceof Error ? e.message : "Vérifie ta connexion"}`);
     }
     setLoading(false);
   }
