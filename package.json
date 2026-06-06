@@ -1,21 +1,29 @@
 {
-  "name": "audit-prosuma",
+  "name": "pro-audit",
+  "version": "0.1.0",
   "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "description": "Application d'audit de supervision pour les supermarchés Prosuma",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "next": "^16.2.7",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.4",
+    "lucide-react": "^0.487.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.6.3",
-    "vite": "^6.0.5"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.7",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
