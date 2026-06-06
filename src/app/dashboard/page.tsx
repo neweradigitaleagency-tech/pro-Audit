@@ -16,6 +16,33 @@ export default async function DashboardPage() {
   const role = profile?.role || "auditeur";
   const isManagerOrAdmin = role === "manager" || role === "admin";
 
+  let auditQuery = supabase.from("audits").select("id, score, magasin_name");
+  if (!isManagerOrAdmin) {
+    auditQuery = auditQuery.eq("user_id", session.user.id);
+  }
+  const { data: audits } = await auditQuery;
+
+  const totalAudits = audits?.length || 0;
+  const avgScore = audits?.length
+    ? Math.round(audits.reduce((s, a) => s + (a.score || 0), 0) / audits.length)
+    : 0;
+
+  const magasinsCount = audits
+    ? new Set(audits.filter((a) => a.magasin_name).map((a) => a.magasin_name)).size
+    : 0;
+
+  let overdueActions = 0;
+  if (audits && audits.length > 0) {
+    const auditIds = audits.map((a) => a.id);
+    const { count } = await supabase
+      .from("corrective_actions")
+      .select("id", { count: "exact", head: true })
+      .in("audit_id", auditIds)
+      .eq("resolved", false)
+      .lt("deadline", new Date().toISOString().split("T")[0]);
+    overdueActions = count ?? 0;
+  }
+
   async function signOut() {
     "use server";
     const s = await createClient();
@@ -40,10 +67,10 @@ export default async function DashboardPage() {
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
-        <KpiCard icon={<ClipboardList size={20} />} label="Audits" value="—" color="#ED7D31" />
-        <KpiCard icon={<TrendingUp size={20} />} label="Conformité" value="—" color="#16a34a" />
-        <KpiCard icon={<AlertTriangle size={20} />} label="Actions en retard" value="—" color="#dc2626" />
-        <KpiCard icon={<Building2 size={20} />} label="Magasins" value="—" color="#0284c7" />
+        <KpiCard icon={<ClipboardList size={20} />} label="Audits" value={String(totalAudits)} color="#ED7D31" />
+        <KpiCard icon={<TrendingUp size={20} />} label="Conformité" value={`${avgScore}%`} color="#16a34a" />
+        <KpiCard icon={<AlertTriangle size={20} />} label="Actions en retard" value={String(overdueActions ?? 0)} color="#dc2626" />
+        <KpiCard icon={<Building2 size={20} />} label="Magasins" value={String(magasinsCount)} color="#0284c7" />
       </div>
 
       <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
@@ -58,13 +85,6 @@ export default async function DashboardPage() {
             <Users size={20} /> Administration
           </a>
         )}
-      </div>
-
-      <div style={{ background:"#fff7ed", border:"0.5px solid #fed7aa", borderRadius:10, padding:"12px 14px" }}>
-        <div style={{ fontSize:13, fontWeight:500, color:"#9a3412", marginBottom:4 }}>🚀 Mode déploiement</div>
-        <div style={{ fontSize:12, color:"#c2410c", lineHeight:1.6 }}>
-          Configuration Supabase requise. Créez un projet Supabase et mettez à jour <code style={{ background:"#fef3c7", padding:"1px 4px", borderRadius:3 }}>.env.local</code>
-        </div>
       </div>
     </div>
   );
