@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,22 +16,25 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const { createClient } = await import("@/lib/supabase/client");
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    const fn = mode === "login"
-      ? supabase.auth.signInWithPassword({ email, password })
-      : supabase.auth.signUp({ email, password, options: { data: { role: "auditeur" } } });
+      const fn = mode === "login"
+        ? supabase.auth.signInWithPassword({ email, password })
+        : supabase.auth.signUp({ email, password, options: { data: { role: "auditeur" } } });
 
-    const { error: err } = await fn;
-    if (err) { setError(err.message); setLoading(false); return; }
+      const { error: err } = await fn;
+      if (err) { setError(err.message); setLoading(false); return; }
 
-    if (mode === "login") {
-      router.push("/dashboard");
-      router.refresh();
-    } else {
-      setError("Inscription réussie ! Vérifiez votre email pour confirmer.");
-      setMode("login");
+      if (mode === "login") {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        setError("Inscription réussie ! Vérifiez votre email pour confirmer.");
+        setMode("login");
+      }
+    } catch (e) {
+      setError(`Erreur de connexion: ${e instanceof Error ? e.message : "Vérifie ta connexion"}`);
     }
     setLoading(false);
   }
