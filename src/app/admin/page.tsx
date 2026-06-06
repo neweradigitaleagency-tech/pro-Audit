@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
-import { ArrowLeft, Users, Building2, ClipboardList, TrendingUp } from "lucide-react"
+import { ArrowLeft, Users, Building2, ClipboardList, TrendingUp, Upload } from "lucide-react"
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -152,6 +152,17 @@ export default async function AdminPage() {
             Aucun audit
           </div>
         )}
+      </div>
+
+      <div style={{ marginTop:24, paddingTop:16, borderTop:"0.5px solid #e5e7eb" }}>
+        <Link href="/migration" style={{
+          display:"flex", alignItems:"center", gap:8,
+          padding:"12px 14px", borderRadius:10, border:"0.5px solid #e5e7eb",
+          background:"#fff7ed", color:"#ED7D31", fontSize:14, textDecoration:"none"
+        }}>
+          <Upload size={18} />
+          Migration des données (import JSON)
+        </Link>
       </div>
     </div>
   )
