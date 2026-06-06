@@ -80,6 +80,9 @@ export default async function DashboardPage() {
         <a href="/audits" style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px", borderRadius:10, border:"0.5px solid #e5e7eb", background:"#f9fafb", color:"#111", fontSize:14, textDecoration:"none" }}>
           <ClipboardList size={20} /> Historique des audits
         </a>
+        <a href="/actions" style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px", borderRadius:10, border:"0.5px solid #e5e7eb", background:"#f9fafb", color:"#111", fontSize:14, textDecoration:"none" }}>
+          <AlertTriangle size={20} /> Actions correctives{overdueActions > 0 && ` (${overdueActions})`}
+        </a>
         {isManagerOrAdmin && (
           <a href="/admin" style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px", borderRadius:10, border:"0.5px solid #ED7D31", background:"#fff7ed", color:"#ED7D31", fontSize:14, textDecoration:"none" }}>
             <Users size={20} /> Administration
