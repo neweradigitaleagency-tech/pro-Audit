@@ -47,7 +47,25 @@ export default function NewAuditPage() {
 
   useEffect(() => {
     loadMagasins()
+    loadUserProfile()
   }, [])
+
+  async function loadUserProfile() {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single()
+        if (profile?.full_name) {
+          setHeader(prev => ({ ...prev, superviseur: profile.full_name }))
+        }
+      }
+    } catch { /* ignore */ }
+  }
 
   useEffect(() => {
     if (page !== "audit") return
@@ -295,9 +313,8 @@ export default function NewAuditPage() {
           <label style={{ fontSize:13, fontWeight:500, color:"#374151", display:"block", marginBottom:4 }}>Superviseur</label>
           <input
             value={header.superviseur}
-            onChange={e => setHeader(p => ({...p, superviseur: e.target.value}))}
-            placeholder="Nom du superviseur"
-            style={{ width:"100%", padding:"12px", borderRadius:8, border:"0.5px solid #d1d5db", fontSize:14, fontFamily:"inherit" }}
+            disabled
+            style={{ width:"100%", padding:"12px", borderRadius:8, border:"0.5px solid #d1d5db", fontSize:14, fontFamily:"inherit", background:"#f3f4f6", color:"#6b7280" }}
           />
         </div>
 

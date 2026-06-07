@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, full_name } = await req.json();
     if (!email || !password) {
       return NextResponse.json({ error: "Email et mot de passe requis" }, { status: 400 });
     }
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       email,
       password,
       email_confirm: true,
-      user_metadata: { role: "auditeur" },
+      user_metadata: { role: "auditeur", full_name: full_name || "" },
     });
 
     if (error) {

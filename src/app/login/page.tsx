@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -24,10 +26,11 @@ export default function LoginPage() {
         router.push("/dashboard");
         router.refresh();
       } else {
+        const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
         const res = await fetch("/api/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email, password, full_name: fullName }),
         });
         const data = await res.json();
         if (!res.ok) { setError(data.error); setLoading(false); return; }
@@ -50,6 +53,21 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit}>
+          {mode === "register" && (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
+              <div>
+                <label style={{ fontSize:12, color:"#6b7280", display:"block", marginBottom:4 }}>Prénom</label>
+                <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} required
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"1px solid #e5e7eb", fontSize:14, boxSizing:"border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize:12, color:"#6b7280", display:"block", marginBottom:4 }}>Nom</label>
+                <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} required
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"1px solid #e5e7eb", fontSize:14, boxSizing:"border-box" }} />
+              </div>
+            </div>
+          )}
+
           <div style={{ marginBottom:12 }}>
             <label style={{ fontSize:12, color:"#6b7280", display:"block", marginBottom:4 }}>Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
@@ -74,7 +92,7 @@ export default function LoginPage() {
         </form>
 
         <div style={{ textAlign:"center", marginTop:14 }}>
-          <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
+          <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setFirstName(""); setLastName(""); }}
             style={{ background:"none", border:"none", color:"#ED7D31", cursor:"pointer", fontSize:13 }}>
             {mode === "login" ? "Pas de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
           </button>
