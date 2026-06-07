@@ -3,7 +3,7 @@ import Link from "next/link"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { ZONES, STATUTS, scoreOf, scoreColor, computeCounts } from "@/lib/audit/zones"
 import type { ResultItem } from "@/lib/audit/zones"
-import { ArrowLeft, Download } from "lucide-react"
+import { ArrowLeft, Download, LayoutDashboard } from "lucide-react"
 
 export default async function AuditDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -141,19 +141,25 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
         })}
       </div>
 
-      {(audit.status === "draft" || isManagerOrAdmin) && (
-        <div style={{ display:"flex", gap:8, marginTop:20 }}>
-          {audit.status === "draft" && (
-            <Link href={`/audit/nouveau?draft=${audit.id}`}
-              style={{
-                flex:1, padding:"12px", borderRadius:8, background:"#ED7D31", color:"#fff",
-                textAlign:"center", fontSize:14, textDecoration:"none"
-              }}>
-              Reprendre le brouillon
-            </Link>
-          )}
-        </div>
-      )}
+      <div style={{ display:"flex", gap:8, marginTop:20 }}>
+        {audit.status === "draft" && (
+          <Link href={`/audit/nouveau?draft=${audit.id}`}
+            style={{
+              flex:1, padding:"12px", borderRadius:8, background:"#ED7D31", color:"#fff",
+              textAlign:"center", fontSize:14, textDecoration:"none"
+            }}>
+            Reprendre le brouillon
+          </Link>
+        )}
+        <Link href="/dashboard"
+          style={{
+            flex:1, padding:"12px", borderRadius:8, background:"#fff", color:"#111",
+            textAlign:"center", fontSize:14, textDecoration:"none",
+            border:"0.5px solid #e5e7eb", display:"flex", alignItems:"center", justifyContent:"center", gap:6
+          }}>
+          <LayoutDashboard size={16} /> Retour dashboard
+        </Link>
+      </div>
     </div>
   )
 }

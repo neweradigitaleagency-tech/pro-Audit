@@ -66,7 +66,7 @@ export default function NewAuditPage() {
       } else {
         cur.statut = statut
         if (statut === "S" || statut === "NA") {
-          delete cur.comment; delete cur.action; delete cur.deadlineType; delete cur.deadline
+          delete cur.action; delete cur.deadlineType; delete cur.deadline
         }
         r[itemId] = cur
       }
@@ -188,6 +188,7 @@ export default function NewAuditPage() {
     setSaving(true)
     const counts = computeCounts(results)
     const score = scoreOf(results)
+    let finalId = auditId
     try {
       const payload = {
         magasin_name: header.magasin,
@@ -201,11 +202,11 @@ export default function NewAuditPage() {
         score,
         status: "final" as const,
       }
-      if (auditId) {
+      if (finalId) {
         const res = await fetch("/api/audits", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...payload, id: auditId }),
+          body: JSON.stringify({ ...payload, id: finalId }),
         });
         if (!res.ok) { const d = await res.json(); setError(d.error); setSaving(false); return; }
       } else {
@@ -216,9 +217,9 @@ export default function NewAuditPage() {
         });
         if (!res.ok) { const d = await res.json(); setError(d.error); setSaving(false); return; }
         const d = await res.json();
-        if (d.id) setAuditId(d.id)
+        if (d.id) { finalId = d.id; setAuditId(d.id) }
       }
-      setPage("summary")
+      if (finalId) router.push(`/audits/${finalId}`)
     } catch (e) {
       setError(`Erreur de sauvegarde: ${e instanceof Error ? e.message : "Vérifie ta connexion"}`);
     }
@@ -404,7 +405,7 @@ export default function NewAuditPage() {
 
       {auditMode === "zone" ? (
         <>
-          <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:8, marginBottom:12, scrollbarWidth:"none" }}>
+          <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:8, marginBottom:12 }}>
             {zonesLive.map((z, i) => {
               const zoneDone = z.items.filter(it => results[it.id]?.statut).length
               const zoneTotal = z.items.length
@@ -471,6 +472,7 @@ export default function NewAuditPage() {
               key={item.id}
               item={item}
               result={results[item.id]}
+              expanded={expandedItems.has(item.id)}
               isCustom={item.id.startsWith("cx_")}
               onStatut={setStatut}
               onField={setField}
@@ -506,7 +508,7 @@ export default function NewAuditPage() {
         </>
       ) : (
         <>
-          <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:8, marginBottom:12, scrollbarWidth:"none" }}>
+          <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:8, marginBottom:12 }}>
             {allCats.map(cat => {
               const catItems = zonesLive.flatMap(z => z.items).filter(i => i.cat === cat)
               const catDone = catItems.filter(it => results[it.id]?.statut).length
@@ -533,6 +535,7 @@ export default function NewAuditPage() {
               key={item.id}
               item={item}
               result={results[item.id]}
+              expanded={expandedItems.has(item.id)}
               zoneLabel={item._zoneLabel}
               showZone={true}
               isCustom={item.id.startsWith("cx_")}

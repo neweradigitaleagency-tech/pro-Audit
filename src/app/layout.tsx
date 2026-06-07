@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 export const metadata: Metadata = {
   title: "ProAudit — Prosuma",
@@ -19,12 +21,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <script src="/register-sw.js" defer />
-        <script dangerouslySetInnerHTML={{
-          __html: `document.addEventListener('click',function(e){var t=e.target.closest('a');if(!t||!t.href)return;var u=new URL(t.href);if(u.pathname===location.pathname&&u.hostname===location.hostname){e.preventDefault();window.scrollTo({top:0,behavior:'smooth'})}})`
-        }} />
+        <Script src="/register-sw.js" strategy="afterInteractive" />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <ScrollToTop />
+        {children}
+      </body>
     </html>
   );
 }

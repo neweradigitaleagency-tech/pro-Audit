@@ -10,6 +10,7 @@ interface ItemCardProps {
   zoneLabel?: string
   showZone?: boolean
   isCustom?: boolean
+  expanded?: boolean
   onStatut: (itemId: string, statut: "S" | "M" | "NS" | "NA") => void
   onField: (itemId: string, field: string, value: string) => void
   onToggle: (itemId: string) => void
@@ -19,11 +20,11 @@ interface ItemCardProps {
 }
 
 export const ItemCard = memo(function ItemCard({
-  item, result, zoneLabel, showZone, isCustom,
+  item, result, zoneLabel, showZone, isCustom, expanded,
   onStatut, onField, onToggle, onAddPhoto, onRemovePhoto, onRemoveCustom
 }: ItemCardProps) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const expanded = result?.statut === "M" || result?.statut === "NS" || (result?.comment || result?.action || result?.deadlineType)
+  const isExpanded = expanded ?? (result?.statut === "M" || result?.statut === "NS" || (result?.comment || result?.action || result?.deadlineType))
   const badge = getDeadlineBadge(result)
 
   return (
@@ -92,11 +93,11 @@ export const ItemCard = memo(function ItemCard({
             padding:"4px 0", marginTop:6, width:"100%", textAlign:"left"
           }}
         >
-          {expanded ? "▲ Moins" : "▼ Plus"}
+          {isExpanded ? "▲ Moins" : "▼ Plus"}
         </button>
       </div>
 
-      {expanded && (
+      {isExpanded && (
         <div style={{ borderTop:"0.5px solid #e5e7eb", padding:"12px 14px" }}>
           <textarea
             placeholder="Commentaire / observation"
