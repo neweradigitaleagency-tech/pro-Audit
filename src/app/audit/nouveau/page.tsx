@@ -280,36 +280,154 @@ export default function NewAuditPage() {
   if (page === "summary") {
     const counts = computeCounts(results)
     const score = scoreOf(results)
+    const total = Object.keys(results).length
+    const totalS = counts.S || 0
+    const totalM = counts.M || 0
+    const totalNS = counts.NS || 0
+    const totalNA = counts.NA || 0
+    const barTotal = totalS + totalM + totalNS + totalNA || 1
+    const pctS = (totalS / barTotal) * 100
+    const pctM = (totalM / barTotal) * 100
+    const pctNS = (totalNS / barTotal) * 100
+    const pctNA = (totalNA / barTotal) * 100
+
+    const zonesWithItems = zonesLive.map(z => ({
+      ...z,
+      items: z.items.filter(it => results[it.id]?.statut)
+    })).filter(z => z.items.length > 0)
+
+    const itemsWithAction = Object.entries(results).filter(([, r]) => r?.action || r?.statut === "M" || r?.statut === "NS")
+
+    function interprétation(s: number): string {
+      if (s >= 90) return "Excellent"
+      if (s >= 80) return "Très bon"
+      if (s >= 70) return "Bon"
+      if (s >= 60) return "Moyen"
+      if (s >= 40) return "Insuffisant"
+      return "Critique"
+    }
+
     return (
-      <div style={{ maxWidth:560, margin:"0 auto", padding:"1.5rem 1rem", textAlign:"center" }}>
-        <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
-        <h1 style={{ fontSize:22, fontWeight:600, color:"#111", margin:"0 0 4px" }}>Audit enregistr&eacute;</h1>
-        <p style={{ fontSize:14, color:"#6b7280", margin:"0 0 8px" }}>
-          {header.magasin} — {header.date}
-        </p>
-        <div style={{
-          fontSize:36, fontWeight:700, color: score >= 80 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626",
-          margin:"16px 0"
-        }}>
-          {score}%
+      <div style={{ maxWidth:560, margin:"0 auto", padding:"1.5rem 1rem" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <button onClick={() => setPage("audit")} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }} aria-label="Retour">
+              <ArrowLeft size={20} color="#111" />
+            </button>
+            <h1 style={{ fontSize:18, fontWeight:600, color:"#111", margin:0 }}>Aperçu du rapport</h1>
+          </div>
         </div>
-        <div style={{ display:"flex", justifyContent:"center", gap:12, marginBottom:20 }}>
-          {STATUTS.map(s => (
-            <div key={s.val} style={{ textAlign:"center" }}>
-              <div style={{ fontSize:20 }}>{s.short}</div>
-              <div style={{ fontSize:13, fontWeight:600, color:"#111" }}>{counts[s.val]}</div>
-              <div style={{ fontSize:11, color:"#6b7280" }}>{s.label}</div>
+
+        <div id="preview-content" style={{ fontFamily:"system-ui, sans-serif", color:"#111" }}>
+
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", paddingBottom:10, borderBottom:"2px solid #0284c7", marginBottom:16 }}>
+            <div>
+              <div style={{ fontSize:11, color:"#9ca3af", textTransform:"uppercase", letterSpacing:1 }}>Prosuma</div>
+              <div style={{ fontSize:18, fontWeight:700 }}>Rapport d&apos;Audit</div>
             </div>
-          ))}
+            <div style={{ textAlign:"right", fontSize:13, color:"#6b7280", lineHeight:1.6 }}>
+              <div><strong>{header.magasin}</strong></div>
+              <div>{header.date}{header.heure ? ` · ${header.heure}` : ""}</div>
+              <div>{header.superviseur}{header.responsable ? ` · Resp. ${header.responsable}` : ""}</div>
+            </div>
+          </div>
+
+          <div style={{ display:"flex", gap:16, marginBottom:16, alignItems:"center" }}>
+            <div style={{ textAlign:"center", flexShrink:0 }}>
+              <div style={{ fontSize:36, fontWeight:700, color: score >= 80 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626", lineHeight:1 }}>{score}%</div>
+              <div style={{ fontSize:12, fontWeight:600, color: score >= 80 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626" }}>{interprétation(score)}</div>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ height:16, borderRadius:8, overflow:"hidden", display:"flex", background:"#f3f4f6", marginBottom:4 }}>
+                {pctS > 0 && <div style={{ width:`${pctS}%`, background:"#16a34a", minWidth: pctS > 0 ? 4 : 0 }} />}
+                {pctM > 0 && <div style={{ width:`${pctM}%`, background:"#d97706", minWidth: pctM > 0 ? 4 : 0 }} />}
+                {pctNS > 0 && <div style={{ width:`${pctNS}%`, background:"#dc2626", minWidth: pctNS > 0 ? 4 : 0 }} />}
+                {pctNA > 0 && <div style={{ width:`${pctNA}%`, background:"#d1d5db", minWidth: pctNA > 0 ? 4 : 0 }} />}
+              </div>
+              <div style={{ display:"flex", gap:10, fontSize:11, color:"#6b7280" }}>
+                <span>✅ S <strong>{totalS}</strong></span>
+                <span>⚠️ M <strong>{totalM}</strong></span>
+                <span>❌ NS <strong>{totalNS}</strong></span>
+                <span>— NA <strong>{totalNA}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom:16, padding:"10px 14px", background:"#f9fafb", borderRadius:8, fontSize:13, color:"#374151", lineHeight:1.6 }}>
+            Sur <strong>{total}</strong> critères évalués : <strong>{totalS}</strong> satisfaisants, <strong>{totalM}</strong> moyens, <strong>{totalNS}</strong> non satisfaisants, <strong>{totalNA}</strong> non applicables.
+            {itemsWithAction.length > 0 && ` ${itemsWithAction.length} point${itemsWithAction.length > 1 ? "s" : ""} nécessite${itemsWithAction.length > 1 ? "nt" : ""} un plan d'action.`}
+          </div>
+
+          <h3 style={{ fontSize:14, fontWeight:600, margin:"0 0 8px", color:"#111" }}>Synthèse par zone</h3>
+          <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:16 }}>
+            {zonesWithItems.map(zone => {
+              const zoneS = zone.items.filter(it => results[it.id]?.statut === "S").length
+              const zoneM = zone.items.filter(it => results[it.id]?.statut === "M").length
+              const zoneNS = zone.items.filter(it => results[it.id]?.statut === "NS").length
+              const hasIssues = zoneM > 0 || zoneNS > 0
+              return (
+                <div key={zone.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 10px", background: hasIssues ? "#fef2f2" : "#f9fafb", borderRadius:6 }}>
+                  <span style={{ fontSize:16, width:24, textAlign:"center", flexShrink:0 }}>{zone.icon}</span>
+                  <span style={{ flex:1, fontSize:13, fontWeight: hasIssues ? 600 : 400 }}>{zone.label}</span>
+                  <span style={{ fontSize:12, color:"#16a34a" }}>✅ {zoneS}</span>
+                  {zoneM > 0 && <span style={{ fontSize:12, color:"#d97706", fontWeight:600 }}>⚠️ {zoneM}</span>}
+                  {zoneNS > 0 && <span style={{ fontSize:12, color:"#dc2626", fontWeight:600 }}>❌ {zoneNS}</span>}
+                </div>
+              )
+            })}
+          </div>
+
+          {itemsWithAction.length > 0 && (
+            <div style={{ marginBottom:16 }}>
+              <h3 style={{ fontSize:14, fontWeight:600, margin:"0 0 8px", color:"#111" }}>Actions correctives</h3>
+              <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                {zonesWithItems.flatMap(zone =>
+                  zone.items.map(item => {
+                    const r = results[item.id]
+                    if (!r?.statut || r.statut === "S" || r.statut === "NA") return null
+                    const st = STATUTS.find(s => s.val === r.statut)
+                    return (
+                      <div key={item.id} style={{ padding:"8px 12px", background:"#fff", borderRadius:6, border:"1px solid #f3f4f6", fontSize:13 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <span>{st?.short}</span>
+                          <span style={{ color:"#6b7280", fontSize:11 }}>{zone.label}</span>
+                          <span style={{ flex:1 }}>{item.label}</span>
+                          {r.deadlineType && <span style={{ fontSize:11, whiteSpace:"nowrap", color:"#6b7280" }}>{r.deadlineType === "immediat" ? "🔴 Immédiat" : r.deadlineType === "continu" ? "🔄 Continu" : `📅 ${r.deadline || ""}`}</span>}
+                        </div>
+                        {r.action && <div style={{ marginTop:3, color:"#0284c7", fontSize:12 }}>Action : {r.action}</div>}
+                        {r.comment && <div style={{ marginTop:2, color:"#6b7280", fontSize:12, fontStyle:"italic" }}>{r.comment}</div>}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          <div style={{ paddingTop:10, borderTop:"1px solid #e5e7eb", fontSize:11, color:"#9ca3af", display:"flex", justifyContent:"space-between", marginBottom:16 }}>
+            <span>Aperçu généré le {new Date().toLocaleDateString("fr-FR")}</span>
+            <span>Prosuma — ProAudit</span>
+          </div>
         </div>
-        <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-          <button onClick={() => router.push("/audits")}
-            style={{ padding:"12px 24px", borderRadius:8, background:"#ED7D31", color:"#fff", border:"none", fontSize:14, cursor:"pointer" }}>
-            Voir historique
+
+        {error && (
+          <div style={{ fontSize:12, color:"#dc2626", background:"#fee2e2", padding:"8px 12px", borderRadius:6, marginBottom:12 }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display:"flex", gap:8, justifyContent:"center", borderTop:"0.5px solid #e5e7eb", paddingTop:16 }}>
+          <button onClick={() => setPage("audit")}
+            style={{ padding:"12px 20px", borderRadius:8, border:"0.5px solid #e5e7eb", background:"#fff", color:"#111", fontSize:14, cursor:"pointer", flex:1 }}>
+            ← Retour à l&apos;audit
           </button>
-          <button onClick={() => router.push("/dashboard")}
-            style={{ padding:"12px 24px", borderRadius:8, background:"#fff", color:"#111", border:"0.5px solid #e5e7eb", fontSize:14, cursor:"pointer" }}>
-            Retour dashboard
+          <button onClick={saveFinal} disabled={saving}
+            style={{
+              padding:"12px 20px", borderRadius:8, border:"none",
+              background: saving ? "#d1d5db" : "#16a34a", color:"#fff",
+              fontSize:14, fontWeight:500, cursor: saving ? "wait" : "pointer", flex:1
+            }}>
+            {saving ? "Enregistrement..." : "✓ Confirmer et enregistrer"}
           </button>
         </div>
       </div>
@@ -579,9 +697,9 @@ export default function NewAuditPage() {
                 Zone suivante →
               </button>
             ) : (
-              <button onClick={saveFinal} disabled={saving}
-                style={{ flex:1, padding:"12px", borderRadius:8, border:"none", background:"#16a34a", color:"#fff", fontSize:14, cursor:saving?"wait":"pointer" }}>
-                {saving ? "Enregistrement..." : "Terminer et sauvegarder"}
+              <button onClick={() => setPage("summary")}
+                style={{ flex:1, padding:"12px", borderRadius:8, border:"none", background:"#0284c7", color:"#fff", fontSize:14, cursor:"pointer" }}>
+                Aperçu du rapport →
               </button>
             )}
           </div>
@@ -606,13 +724,13 @@ export default function NewAuditPage() {
             />
           ))}
 
-          <button onClick={saveFinal} disabled={saving}
+          <button onClick={() => setPage("summary")}
             style={{
               width:"100%", padding:"14px", borderRadius:8, border:"none",
-              background:"#16a34a", color:"#fff", fontSize:15, fontWeight:500,
-              cursor: saving ? "wait" : "pointer", marginTop:16, marginBottom:40
+              background:"#0284c7", color:"#fff", fontSize:15, fontWeight:500,
+              cursor:"pointer", marginTop:16, marginBottom:40
             }}>
-            {saving ? "Enregistrement..." : "Terminer et sauvegarder"}
+            Aperçu du rapport →
           </button>
         </>
       )}
