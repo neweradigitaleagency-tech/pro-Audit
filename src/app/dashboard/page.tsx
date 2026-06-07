@@ -5,7 +5,7 @@ import { LogOut, Plus, ClipboardList, AlertTriangle, TrendingUp, Building2, User
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/auth/login");
 
   const svc = createServiceClient();
   const { data: profile } = await svc
@@ -48,7 +48,7 @@ export default async function DashboardPage() {
     "use server";
     const s = await createActionClient();
     await s.auth.signOut();
-    redirect("/login");
+    redirect("/auth/login");
   }
 
   return (

@@ -6,7 +6,7 @@ import { ArrowLeft, Users, Building2, ClipboardList, TrendingUp, Upload } from "
 export default async function AdminPage() {
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect("/login")
+  if (!session) redirect("/auth/login")
 
   const svc = createServiceClient()
 

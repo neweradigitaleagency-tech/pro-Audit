@@ -7,7 +7,7 @@ import { scoreColor } from "@/lib/audit/zones"
 export default async function AuditsPage() {
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect("/login")
+  if (!session) redirect("/auth/login")
 
   const svc = createServiceClient()
   const { data: profile } = await svc

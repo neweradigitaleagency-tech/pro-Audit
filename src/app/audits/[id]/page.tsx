@@ -26,7 +26,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
   const { id } = await params
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect("/login")
+  if (!session) redirect("/auth/login")
 
   const svc = createServiceClient()
   const { data: profile } = await svc
