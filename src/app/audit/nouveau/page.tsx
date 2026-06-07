@@ -28,6 +28,7 @@ export default function NewAuditPage() {
   const [error, setError] = useState("")
   const [auditId, setAuditId] = useState<string | null>(null)
   const [magasins, setMagasins] = useState<string[]>([])
+  const [nameLoaded, setNameLoaded] = useState(false)
   const [newCustomCat, setNewCustomCat] = useState("Autre")
   const [newCustomLabel, setNewCustomLabel] = useState("")
   const [addingCustomZone, setAddingCustomZone] = useState<string | null>(null)
@@ -47,27 +48,36 @@ export default function NewAuditPage() {
 
   useEffect(() => {
     loadMagasins()
-    loadUserProfile()
+    const supabase = createClient()
+    ;(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) await loadUserName(supabase, session.user)
+      else setNameLoaded(true)
+    })()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) loadUserName(supabase, session.user)
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
-  async function loadUserProfile() {
+  async function loadUserName(supabase: ReturnType<typeof createClient>, user: { id: string; user_metadata?: Record<string, unknown> }) {
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name")
         .eq("id", user.id)
-        .single()
-      const name = profile?.full_name || user.user_metadata?.full_name || ""
+        .maybeSingle()
+      const name = profile?.full_name || (user.user_metadata?.full_name as string) || ""
       if (name) {
         setHeader(prev => ({ ...prev, superviseur: name }))
+        setNameLoaded(true)
         if (!profile?.full_name) {
           await supabase.from("profiles").update({ full_name: name }).eq("id", user.id)
         }
+      } else {
+        setNameLoaded(true)
       }
-    } catch { /* ignore */ }
+    } catch { setNameLoaded(true) }
   }
 
   async function saveProfileName(name: string) {
@@ -79,7 +89,7 @@ export default function NewAuditPage() {
         .from("profiles")
         .select("full_name")
         .eq("id", user.id)
-        .single()
+        .maybeSingle()
       if (profile && !profile.full_name) {
         await supabase.from("profiles").update({ full_name: name }).eq("id", user.id)
       }
@@ -335,11 +345,16 @@ export default function NewAuditPage() {
             value={header.superviseur}
             onChange={e => setHeader(p => ({...p, superviseur: e.target.value}))}
             placeholder="Nom du superviseur"
-            style={{ width:"100%", padding:"12px", borderRadius:8, border:"0.5px solid #d1d5db", fontSize:14, fontFamily:"inherit" }}
+            disabled={nameLoaded && !!header.superviseur}
+            style={{
+              width:"100%", padding:"12px", borderRadius:8,
+              border:"0.5px solid #d1d5db", fontSize:14, fontFamily:"inherit",
+              ...(nameLoaded && header.superviseur ? { background:"#f3f4f6", color:"#6b7280" } : {})
+            }}
           />
-          {header.superviseur && (
-            <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>
-              Ce nom sera associé à ton compte pour les prochains audits.
+          {nameLoaded && !header.superviseur && (
+            <div style={{ fontSize:11, color:"#f59e0b", marginTop:4 }}>
+              Aucun nom trouvé sur ton profil. Saisis ton nom une fois, il sera mémorisé.
             </div>
           )}
         </div>
