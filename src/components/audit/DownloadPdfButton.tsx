@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Download } from "lucide-react"
 import { generateReportHtml } from "@/lib/generateReportHtml"
 import type { ResultItem } from "@/lib/audit/zones"
@@ -23,24 +23,31 @@ interface Props {
 
 export function DownloadPdfButton(props: Props) {
   const [loading, setLoading] = useState(false)
+  const linkRef = useRef<HTMLAnchorElement | null>(null)
 
   function handleDownload() {
     setLoading(true)
     try {
       const html = generateReportHtml(props)
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
       const slug = (props.ref || props.magasinName).replace(/[^a-zA-Z0-9]/g, "_")
+
+      const dataUrl = "data:text/html;charset=utf-8," + encodeURIComponent(html)
+
+      if (!linkRef.current) {
+        const a = document.createElement("a")
+        a.style.display = "none"
+        document.body.appendChild(a)
+        linkRef.current = a
+      }
+
+      const a = linkRef.current
+      a.href = dataUrl
       a.download = `rapport-${slug}.html`
-      document.body.appendChild(a)
       a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+
+      setTimeout(() => setLoading(false), 100)
     } catch (e) {
       console.error("HTML generation error", e)
-    } finally {
       setLoading(false)
     }
   }
@@ -57,7 +64,7 @@ export function DownloadPdfButton(props: Props) {
       }}
     >
       <Download size={18} />
-      {loading ? "Génération..." : "Télécharger le rapport (HTML/PDF)"}
+      {loading ? "Génération..." : "Télécharger le rapport HTML"}
     </button>
   )
 }
