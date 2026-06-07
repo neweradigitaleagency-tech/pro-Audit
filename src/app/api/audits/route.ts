@@ -26,12 +26,20 @@ export async function POST(req: Request) {
       score: body.score ?? 0,
       status: body.status || "final",
     };
+    let ref: string | null = null;
     if (payload.status === "final") {
-      payload.ref = await generateRef(svc, body.magasin_name as string, body.date as string);
+      ref = await generateRef(svc, body.magasin_name as string, body.date as string);
+      payload.ref = ref;
     }
-    const { data, error } = await svc.from("audits").insert(payload).select("id, ref").single();
+    const { data, error } = await svc.from("audits").insert(payload).select("id").single();
 
     if (error) {
+      if (ref && error.message?.includes?.("ref")) {
+        delete payload.ref;
+        const { data: retry, error: retryErr } = await svc.from("audits").insert(payload).select("id").single();
+        if (retryErr) return NextResponse.json({ error: retryErr.message }, { status: 400 });
+        return NextResponse.json({ id: retry.id });
+      }
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
@@ -66,19 +74,31 @@ export async function PUT(req: Request) {
       score: body.score ?? 0,
       status: body.status || "final",
     };
+    let ref: string | null = null;
     if (updates.status === "final") {
-      const { data: existing } = await svc.from("audits").select("ref").eq("id", body.id).single();
-      if (!existing?.ref) {
-        updates.ref = await generateRef(svc, body.magasin_name as string, body.date as string);
-      }
+      try {
+        const { data: existing } = await svc.from("audits").select("ref").eq("id", body.id).single();
+        if (!existing?.ref) {
+          ref = await generateRef(svc, body.magasin_name as string, body.date as string);
+          updates.ref = ref;
+        } else {
+          ref = existing.ref;
+        }
+      } catch { /* column may not exist yet */ }
     }
     const { error } = await svc.from("audits").update(updates).eq("id", body.id);
 
     if (error) {
+      if (ref && error.message?.includes?.("ref")) {
+        delete updates.ref;
+        const { error: retryErr } = await svc.from("audits").update(updates).eq("id", body.id);
+        if (retryErr) return NextResponse.json({ error: retryErr.message }, { status: 400 });
+        return NextResponse.json({ ok: true, ref: null });
+      }
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, ref: updates.ref || null });
+    return NextResponse.json({ ok: true, ref });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Erreur serveur" },
