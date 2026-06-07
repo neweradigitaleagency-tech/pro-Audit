@@ -304,109 +304,202 @@ export default function NewAuditPage() {
       if (s >= 70) return "Bon"
       if (s >= 60) return "Moyen"
       if (s >= 40) return "Insuffisant"
-      return "Critique"
+      return "CRITIQUE"
+    }
+
+    function scoreColor(s: number): string {
+      return s >= 80 ? "#16a34a" : s >= 60 ? "#d97706" : "#dc2626"
+    }
+
+    function résuméScore(s: number): string {
+      if (s >= 80) return "Niveau de conformité satisfaisant sur l'ensemble des critères."
+      if (s >= 60) return "Points d'amélioration notables. Des écarts nécessitent une attention particulière."
+      return "Défaillances significatives dans plusieurs zones. Des actions correctives immédiates sont indispensables."
     }
 
     return (
-      <div style={{ maxWidth:560, margin:"0 auto", padding:"1.5rem 1rem" }}>
+      <div style={{ maxWidth:680, margin:"0 auto", padding:"1.5rem 1rem" }}>
+
+        {/* Top bar */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <button onClick={() => setPage("audit")} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }} aria-label="Retour">
               <ArrowLeft size={20} color="#111" />
             </button>
-            <h1 style={{ fontSize:18, fontWeight:600, color:"#111", margin:0 }}>Aperçu du rapport</h1>
+            <h1 style={{ fontSize:16, fontWeight:600, color:"#111", margin:0 }}>Aperçu du rapport</h1>
           </div>
         </div>
 
-        <div id="preview-content" style={{ fontFamily:"system-ui, sans-serif", color:"#111" }}>
+        <div id="preview-content">
 
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", paddingBottom:10, borderBottom:"2px solid #0284c7", marginBottom:16 }}>
+          {/* ===== HEADER ===== */}
+          <div style={{ borderBottom:"2px solid #ED7D31", paddingBottom:12, marginBottom:20 }}>
+            <div style={{ fontSize:11, fontWeight:500, color:"#9ca3af", letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>
+              Prosuma — ProAudit
+            </div>
+            <div style={{ fontSize:20, fontWeight:500, color:"#111", marginBottom:10 }}>
+              Rapport d&apos;Audit de Supervision
+            </div>
+            <div style={{ display:"flex", gap:16, flexWrap:"wrap" }}>
+              {[
+                ["Magasin", header.magasin],
+                ["Date", `${header.date}${header.heure ? ` · ${header.heure}` : ""}`],
+                ["Superviseur", header.superviseur],
+                ...(header.responsable ? [["Responsable", header.responsable]] : []),
+              ].map(([label, value]) => (
+                <div key={label} style={{ fontSize:13, color:"#6b7280" }}>
+                  <strong style={{ color:"#111", fontWeight:500 }}>{label} :</strong> {value}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ===== ALERT BANNER ===== */}
+          {score < 60 && (
+            <div style={{ background:"#fff7ed", border:"0.5px solid #fed7aa", borderRadius:8, padding:"10px 14px", marginBottom:20, fontSize:12, color:"#9a3412", lineHeight:1.6 }}>
+              <strong>Attention :</strong> {résuméScore(score)}
+            </div>
+          )}
+
+          {/* ===== SCORE BANNER ===== */}
+          <div style={{
+            display:"grid", gridTemplateColumns:"auto 1fr", gap:16, alignItems:"center",
+            background:"#f9fafb", borderRadius:10, padding:"14px 18px", marginBottom:20,
+            border:"0.5px solid #e5e7eb",
+          }}>
+            <div style={{
+              width:72, height:72, borderRadius:"50%", border:`3px solid ${scoreColor(score)}`,
+              display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+            }}>
+              <div style={{ fontSize:22, fontWeight:500, color: scoreColor(score), lineHeight:1 }}>{score}%</div>
+              <div style={{ fontSize:9, color: scoreColor(score), marginTop:1 }}>{score < 60 ? "CRITIQUE" : interprétation(score).toUpperCase()}</div>
+            </div>
             <div>
-              <div style={{ fontSize:11, color:"#9ca3af", textTransform:"uppercase", letterSpacing:1 }}>Prosuma</div>
-              <div style={{ fontSize:18, fontWeight:700 }}>Rapport d&apos;Audit</div>
-            </div>
-            <div style={{ textAlign:"right", fontSize:13, color:"#6b7280", lineHeight:1.6 }}>
-              <div><strong>{header.magasin}</strong></div>
-              <div>{header.date}{header.heure ? ` · ${header.heure}` : ""}</div>
-              <div>{header.superviseur}{header.responsable ? ` · Resp. ${header.responsable}` : ""}</div>
-            </div>
-          </div>
-
-          <div style={{ display:"flex", gap:16, marginBottom:16, alignItems:"center" }}>
-            <div style={{ textAlign:"center", flexShrink:0 }}>
-              <div style={{ fontSize:36, fontWeight:700, color: score >= 80 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626", lineHeight:1 }}>{score}%</div>
-              <div style={{ fontSize:12, fontWeight:600, color: score >= 80 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626" }}>{interprétation(score)}</div>
-            </div>
-            <div style={{ flex:1 }}>
-              <div style={{ height:16, borderRadius:8, overflow:"hidden", display:"flex", background:"#f3f4f6", marginBottom:4 }}>
-                {pctS > 0 && <div style={{ width:`${pctS}%`, background:"#16a34a", minWidth: pctS > 0 ? 4 : 0 }} />}
-                {pctM > 0 && <div style={{ width:`${pctM}%`, background:"#d97706", minWidth: pctM > 0 ? 4 : 0 }} />}
-                {pctNS > 0 && <div style={{ width:`${pctNS}%`, background:"#dc2626", minWidth: pctNS > 0 ? 4 : 0 }} />}
-                {pctNA > 0 && <div style={{ width:`${pctNA}%`, background:"#d1d5db", minWidth: pctNA > 0 ? 4 : 0 }} />}
+              <div style={{ fontSize:13, fontWeight:500, color:"#111", marginBottom:4 }}>
+                Score de conformité globale — Niveau {interprétation(score)}
               </div>
-              <div style={{ display:"flex", gap:10, fontSize:11, color:"#6b7280" }}>
-                <span>✅ S <strong>{totalS}</strong></span>
-                <span>⚠️ M <strong>{totalM}</strong></span>
-                <span>❌ NS <strong>{totalNS}</strong></span>
-                <span>— NA <strong>{totalNA}</strong></span>
+              <div style={{ fontSize:12, color:"#6b7280", lineHeight:1.5, marginBottom:8 }}>
+                Sur {total} critère{total > 1 ? "s" : ""} évalués, {totalS} satisfaisant{totalS > 1 ? "s" : ""}.
+                {itemsWithAction.length > 0 && ` ${itemsWithAction.length} point${itemsWithAction.length > 1 ? "s" : ""} nécessite${itemsWithAction.length > 1 ? "nt" : ""} un plan d'action correctif.`}
+              </div>
+              <div style={{ height:6, borderRadius:3, background:"#e5e7eb", overflow:"hidden", marginBottom:8 }}>
+                <div style={{ height:"100%", borderRadius:3, width:`${score}%`, background: score >= 80 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626" }} />
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+                {[
+                  { n: totalS, l: "Satisfaisant", cls:"#dcfce7", tc:"#16a34a" },
+                  { n: totalM, l: "Moyen", cls:"#fef3c7", tc:"#d97706" },
+                  { n: totalNS, l: "Non satisf.", cls:"#fee2e2", tc:"#dc2626" },
+                  { n: totalNA, l: "N/A", cls:"#f3f4f6", tc:"#6b7280" },
+                ].map(s => (
+                  <div key={s.l} style={{ padding:"6px 0", borderRadius:6, textAlign:"center", background: s.cls }}>
+                    <div style={{ fontSize:16, fontWeight:500, lineHeight:1, color: s.tc }}>{s.n}</div>
+                    <div style={{ fontSize:10, color: s.tc, marginTop:2 }}>{s.l}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          <div style={{ marginBottom:16, padding:"10px 14px", background:"#f9fafb", borderRadius:8, fontSize:13, color:"#374151", lineHeight:1.6 }}>
-            Sur <strong>{total}</strong> critères évalués : <strong>{totalS}</strong> satisfaisants, <strong>{totalM}</strong> moyens, <strong>{totalNS}</strong> non satisfaisants, <strong>{totalNA}</strong> non applicables.
-            {itemsWithAction.length > 0 && ` ${itemsWithAction.length} point${itemsWithAction.length > 1 ? "s" : ""} nécessite${itemsWithAction.length > 1 ? "nt" : ""} un plan d'action.`}
+          {/* ===== SYNTHÈSE PAR ZONE ===== */}
+          <div style={{ fontSize:13, fontWeight:500, color:"#6b7280", textTransform:"uppercase", letterSpacing:1, marginBottom:10, display:"flex", alignItems:"center", gap:8, marginTop:4 }}>
+            Synthèse par zone
+            <span style={{ flex:1, height:"0.5px", background:"#e5e7eb" }} />
           </div>
-
-          <h3 style={{ fontSize:14, fontWeight:600, margin:"0 0 8px", color:"#111" }}>Synthèse par zone</h3>
-          <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:16 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:5, marginBottom:20 }}>
             {zonesWithItems.map(zone => {
               const zoneS = zone.items.filter(it => results[it.id]?.statut === "S").length
               const zoneM = zone.items.filter(it => results[it.id]?.statut === "M").length
               const zoneNS = zone.items.filter(it => results[it.id]?.statut === "NS").length
               const hasIssues = zoneM > 0 || zoneNS > 0
               return (
-                <div key={zone.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 10px", background: hasIssues ? "#fef2f2" : "#f9fafb", borderRadius:6 }}>
-                  <span style={{ fontSize:16, width:24, textAlign:"center", flexShrink:0 }}>{zone.icon}</span>
-                  <span style={{ flex:1, fontSize:13, fontWeight: hasIssues ? 600 : 400 }}>{zone.label}</span>
-                  <span style={{ fontSize:12, color:"#16a34a" }}>✅ {zoneS}</span>
-                  {zoneM > 0 && <span style={{ fontSize:12, color:"#d97706", fontWeight:600 }}>⚠️ {zoneM}</span>}
-                  {zoneNS > 0 && <span style={{ fontSize:12, color:"#dc2626", fontWeight:600 }}>❌ {zoneNS}</span>}
+                <div key={zone.id} style={{
+                  display:"flex", alignItems:"center", gap:8, padding:"10px 12px",
+                  background:"#fff", borderRadius:8, border: hasIssues ? "0.5px solid #fca5a5" : "0.5px solid #e5e7eb",
+                }}>
+                  <span style={{ fontSize:14, width:22, textAlign:"center", flexShrink:0 }}>{zone.icon}</span>
+                  <span style={{ fontSize:13, fontWeight:500, color:"#111", flex:1 }}>{zone.label}</span>
+                  <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                    <span style={{ fontSize:11, padding:"2px 6px", borderRadius:4, background:"#dcfce7", color:"#166534", fontWeight:500 }}>✓ {zoneS}</span>
+                    {zoneM > 0 && <span style={{ fontSize:11, padding:"2px 6px", borderRadius:4, background:"#fef3c7", color:"#92400e", fontWeight:500 }}>⚠ {zoneM}</span>}
+                    {zoneNS > 0 && <span style={{ fontSize:11, padding:"2px 6px", borderRadius:4, background:"#fee2e2", color:"#991b1b", fontWeight:500 }}>✗ {zoneNS}</span>}
+                  </div>
                 </div>
               )
             })}
           </div>
 
+          {/* ===== ACTIONS CORRECTIVES ===== */}
           {itemsWithAction.length > 0 && (
-            <div style={{ marginBottom:16 }}>
-              <h3 style={{ fontSize:14, fontWeight:600, margin:"0 0 8px", color:"#111" }}>Actions correctives</h3>
-              <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+            <>
+              <div style={{ fontSize:13, fontWeight:500, color:"#6b7280", textTransform:"uppercase", letterSpacing:1, marginBottom:10, display:"flex", alignItems:"center", gap:8 }}>
+                Actions correctives ({itemsWithAction.length} point{itemsWithAction.length > 1 ? "s" : ""})
+                <span style={{ flex:1, height:"0.5px", background:"#e5e7eb" }} />
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:5, marginBottom:20 }}>
                 {zonesWithItems.flatMap(zone =>
                   zone.items.map(item => {
                     const r = results[item.id]
                     if (!r?.statut || r.statut === "S" || r.statut === "NA") return null
-                    const st = STATUTS.find(s => s.val === r.statut)
+                    const isBad = r.statut === "NS"
                     return (
-                      <div key={item.id} style={{ padding:"8px 12px", background:"#fff", borderRadius:6, border:"1px solid #f3f4f6", fontSize:13 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <span>{st?.short}</span>
-                          <span style={{ color:"#6b7280", fontSize:11 }}>{zone.label}</span>
-                          <span style={{ flex:1 }}>{item.label}</span>
-                          {r.deadlineType && <span style={{ fontSize:11, whiteSpace:"nowrap", color:"#6b7280" }}>{r.deadlineType === "immediat" ? "🔴 Immédiat" : r.deadlineType === "continu" ? "🔄 Continu" : `📅 ${r.deadline || ""}`}</span>}
+                      <div key={item.id} style={{
+                        display:"flex", alignItems:"flex-start", gap:8, padding:"10px 12px",
+                        borderRadius:8, border: isBad ? "0.5px solid #fecaca" : "0.5px solid #fde68a",
+                        background: isBad ? "#fff5f5" : "#fffbeb",
+                      }}>
+                        <span style={{ fontSize:13, flexShrink:0, marginTop:1 }}>{isBad ? "✗" : "⚠️"}</span>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:11, color:"#6b7280", marginBottom:2 }}>{zone.label}</div>
+                          <div style={{ fontSize:13, color:"#111", lineHeight:1.4 }}>{item.label}</div>
+                          {r.action && <div style={{ fontSize:12, color:"#ED7D31", marginTop:2 }}>Action : {r.action}</div>}
+                          {r.comment && <div style={{ fontSize:11, color:"#6b7280", fontStyle:"italic", marginTop:2 }}>{r.comment}</div>}
                         </div>
-                        {r.action && <div style={{ marginTop:3, color:"#0284c7", fontSize:12 }}>Action : {r.action}</div>}
-                        {r.comment && <div style={{ marginTop:2, color:"#6b7280", fontSize:12, fontStyle:"italic" }}>{r.comment}</div>}
+                        {r.deadlineType && (
+                          <span style={{ fontSize:11, whiteSpace:"nowrap", color:"#6b7280", flexShrink:0 }}>
+                            {r.deadlineType === "immediat" ? "🔴 Immédiat" : r.deadlineType === "continu" ? "🔄 Continu" : `📅 ${r.deadline || ""}`}
+                          </span>
+                        )}
                       </div>
                     )
                   })
                 )}
               </div>
-            </div>
+            </>
           )}
 
-          <div style={{ paddingTop:10, borderTop:"1px solid #e5e7eb", fontSize:11, color:"#9ca3af", display:"flex", justifyContent:"space-between", marginBottom:16 }}>
-            <span>Aperçu généré le {new Date().toLocaleDateString("fr-FR")}</span>
-            <span>Prosuma — ProAudit</span>
+          {/* ===== RECOMMANDATIONS ===== */}
+          <div style={{ background:"#f9fafb", border:"0.5px solid #e5e7eb", borderRadius:10, padding:"14px 18px", marginBottom:20 }}>
+            <div style={{ fontSize:13, fontWeight:500, color:"#111", marginBottom:10 }}>Recommandations</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {(() => {
+                const recs: string[] = []
+                const nsZones = zonesWithItems.filter(z => z.items.some(it => results[it.id]?.statut === "NS"))
+                const mZones = zonesWithItems.filter(z => z.items.some(it => results[it.id]?.statut === "M"))
+                if (nsZones.length) recs.push(`Intervenir en priorité sur : <strong>${nsZones.map(z => z.label).join("</strong>, <strong>")}</strong> — zones les plus défaillantes.`)
+                if (mZones.length) recs.push(`Renforcer les contrôles sur : <strong>${mZones.map(z => z.label).join("</strong>, <strong>")}</strong>.`)
+                if (Object.values(results).filter(r => r?.statut === "NS").length > 5) recs.push("Organiser une réunion de sensibilisation du personnel.")
+                if (itemsWithAction.length) recs.push("Assurer un suivi régulier des actions correctives engagées.")
+                recs.push("Planifier un audit de suivi sous <strong>30 à 60 jours</strong>.")
+                return recs
+              })().map((r, i) => (
+                <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start", fontSize:13, color:"#111" }}>
+                  <div style={{
+                    minWidth:20, height:20, borderRadius:"50%", background:"#ED7D31", color:"#fff",
+                    fontSize:11, fontWeight:500, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1,
+                  }}>
+                    {i + 1}
+                  </div>
+                  <span dangerouslySetInnerHTML={{ __html: r }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ===== FOOTER ===== */}
+          <div style={{ paddingTop:12, borderTop:"0.5px solid #e5e7eb", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:6, marginBottom:16 }}>
+            <span style={{ fontSize:11, color:"#9ca3af" }}>Aperçu généré le {new Date().toLocaleDateString("fr-FR")}</span>
+            <span style={{ fontSize:11, color:"#9ca3af" }}>Prosuma — ProAudit</span>
           </div>
         </div>
 
