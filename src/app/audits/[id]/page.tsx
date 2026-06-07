@@ -5,6 +5,7 @@ import { ZONES, STATUTS, scoreOf, scoreColor, computeCounts } from "@/lib/audit/
 import type { ResultItem } from "@/lib/audit/zones"
 import { ArrowLeft, LayoutDashboard } from "lucide-react"
 import { DownloadPdfButton } from "@/components/audit/DownloadPdfButton"
+import { DownloadExcelButton } from "@/components/audit/DownloadExcelButton"
 
 function interprétation(score: number): string {
   if (score >= 90) return "Excellent"
@@ -39,7 +40,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
 
   let query = svc
     .from("audits")
-    .select("id, user_id, magasin_name, superviseur, responsable, date, heure, results, custom_items, counts, score, status, created_at")
+    .select("id, user_id, magasin_name, superviseur, responsable, date, heure, results, custom_items, counts, score, status, ref, created_at")
     .eq("id", id)
     .single()
 
@@ -77,15 +78,28 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div style={{ maxWidth:800, margin:"0 auto", padding:"1.5rem 1rem" }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <Link href="/audits" style={{ display:"flex", color:"#111", textDecoration:"none" }} aria-label="Retour">
-            <ArrowLeft size={20} />
-          </Link>
-          <h1 style={{ fontSize:18, fontWeight:600, color:"#111", margin:0 }}>Rapport d&apos;audit</h1>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <Link href="/audits" style={{ display:"flex", color:"#111", textDecoration:"none" }} aria-label="Retour">
+              <ArrowLeft size={20} />
+            </Link>
+            <div>
+              <h1 style={{ fontSize:18, fontWeight:600, color:"#111", margin:0 }}>Rapport d&apos;audit</h1>
+              {audit.ref && <div style={{ fontSize:12, color:"#9ca3af", fontWeight:500 }}>Réf. {audit.ref}</div>}
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <DownloadExcelButton
+              magasinName={audit.magasin_name}
+              date={audit.date}
+              superviseur={audit.superviseur}
+              score={score}
+              results={results}
+              customItems={customItems}
+            />
+            <DownloadPdfButton />
+          </div>
         </div>
-        <DownloadPdfButton />
-      </div>
 
       <div id="report-content" style={{ fontFamily:"system-ui, sans-serif", color:"#111", padding:"0 4px" }}>
 

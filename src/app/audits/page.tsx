@@ -21,7 +21,7 @@ export default async function AuditsPage() {
 
   let query = svc
     .from("audits")
-    .select("id, magasin_name, superviseur, date, score, status, created_at")
+    .select("id, ref, magasin_name, superviseur, date, score, status, created_at")
     .order("created_at", { ascending: false })
 
   if (!isManagerOrAdmin) {
@@ -60,7 +60,7 @@ export default async function AuditsPage() {
                 <div>
                   <div style={{ fontSize:15, fontWeight:500 }}>{a.magasin_name}</div>
                   <div style={{ fontSize:13, color:"#6b7280", marginTop:2 }}>
-                    {a.superviseur} · {a.date}
+                    {a.ref ? `${a.ref} · ` : ""}{a.superviseur} · {a.date}
                   </div>
                 </div>
                 <div style={{ textAlign:"right" }}>

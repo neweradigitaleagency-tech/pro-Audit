@@ -185,3 +185,7 @@ INSERT INTO public.magasins (name) VALUES
   ('Prosuma Abobo'),
   ('Prosuma Anyama')
 ON CONFLICT (name) DO NOTHING;
+
+-- 6. Add reference column for human-readable IDs
+ALTER TABLE public.audits ADD COLUMN IF NOT EXISTS ref TEXT DEFAULT '';
+CREATE INDEX IF NOT EXISTS idx_audits_ref ON public.audits(ref);
