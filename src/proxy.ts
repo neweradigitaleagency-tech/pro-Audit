@@ -24,16 +24,20 @@ export async function proxy(req: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession();
 
-  if (req.nextUrl.pathname.startsWith("/login") && session) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+  const authPages = ["/login", "/auth/login", "/auth/register", "/auth/confirm"]
+  const protectedPrefixes = ["/dashboard", "/admin", "/audits", "/audit", "/actions", "/migration"]
+
+  if (authPages.some(p => req.nextUrl.pathname === p || req.nextUrl.pathname.startsWith(p + "/"))) {
+    if (session && !req.nextUrl.pathname.includes("/confirm")) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
   }
 
-  if (req.nextUrl.pathname.startsWith("/dashboard") && !session) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  if (protectedPrefixes.some(p => req.nextUrl.pathname.startsWith(p))) {
+    if (!session) return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
   if (req.nextUrl.pathname.startsWith("/admin")) {
-    if (!session) return NextResponse.redirect(new URL("/login", req.url));
     const svc = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -41,7 +45,7 @@ export async function proxy(req: NextRequest) {
     const { data: profile } = await svc
       .from("profiles")
       .select("role")
-      .eq("id", session.user.id)
+      .eq("id", session!.user.id)
       .single();
     if (!profile || profile.role !== "admin") {
       return NextResponse.redirect(new URL("/dashboard", req.url));
@@ -52,5 +56,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login/:path*", "/dashboard/:path*", "/admin/:path*"],
+  matcher: ["/login/:path*", "/auth/:path*", "/dashboard/:path*", "/admin/:path*", "/audits/:path*", "/audit/:path*", "/actions/:path*", "/migration/:path*"],
 };

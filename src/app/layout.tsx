@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "ProAudit — Prosuma",
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script src="/register-sw.js" strategy="afterInteractive" />
       </head>
       <body className="antialiased">
+        <Toaster position="top-center" richColors closeButton />
         <ScrollToTop />
         {children}
       </body>
