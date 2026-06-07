@@ -54,15 +54,34 @@ export default function NewAuditPage() {
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .single()
-        if (profile?.full_name) {
-          setHeader(prev => ({ ...prev, superviseur: profile.full_name }))
+      if (!user) return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single()
+      const name = profile?.full_name || user.user_metadata?.full_name || ""
+      if (name) {
+        setHeader(prev => ({ ...prev, superviseur: name }))
+        if (!profile?.full_name) {
+          await supabase.from("profiles").update({ full_name: name }).eq("id", user.id)
         }
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function saveProfileName(name: string) {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single()
+      if (profile && !profile.full_name) {
+        await supabase.from("profiles").update({ full_name: name }).eq("id", user.id)
       }
     } catch { /* ignore */ }
   }
@@ -204,6 +223,7 @@ export default function NewAuditPage() {
 
   async function saveFinal() {
     setSaving(true)
+    if (header.superviseur.trim()) saveProfileName(header.superviseur.trim())
     const counts = computeCounts(results)
     const score = scoreOf(results)
     let finalId = auditId
@@ -313,9 +333,15 @@ export default function NewAuditPage() {
           <label style={{ fontSize:13, fontWeight:500, color:"#374151", display:"block", marginBottom:4 }}>Superviseur</label>
           <input
             value={header.superviseur}
-            disabled
-            style={{ width:"100%", padding:"12px", borderRadius:8, border:"0.5px solid #d1d5db", fontSize:14, fontFamily:"inherit", background:"#f3f4f6", color:"#6b7280" }}
+            onChange={e => setHeader(p => ({...p, superviseur: e.target.value}))}
+            placeholder="Nom du superviseur"
+            style={{ width:"100%", padding:"12px", borderRadius:8, border:"0.5px solid #d1d5db", fontSize:14, fontFamily:"inherit" }}
           />
+          {header.superviseur && (
+            <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>
+              Ce nom sera associé à ton compte pour les prochains audits.
+            </div>
+          )}
         </div>
 
         <div style={{ marginBottom:16 }}>
