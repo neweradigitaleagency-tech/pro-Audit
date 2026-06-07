@@ -48,6 +48,8 @@ CREATE POLICY "users_update_own" ON public.profiles
 CREATE TABLE IF NOT EXISTS public.magasins (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
+  type TEXT DEFAULT '',
+  zone TEXT DEFAULT '',
   address TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -55,8 +57,8 @@ CREATE TABLE IF NOT EXISTS public.magasins (
 ALTER TABLE public.magasins ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "all_read" ON public.magasins FOR SELECT USING (true);
-CREATE POLICY "admin_insert" ON public.magasins FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "all_insert" ON public.magasins FOR INSERT
+  WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "admin_update" ON public.magasins FOR UPDATE
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
@@ -173,19 +175,30 @@ CREATE INDEX IF NOT EXISTS idx_actions_assigned ON public.corrective_actions(ass
 CREATE INDEX IF NOT EXISTS idx_actions_status ON public.corrective_actions(status);
 CREATE INDEX IF NOT EXISTS idx_log_entity ON public.audit_log(entity_type, entity_id);
 
--- Insert default magasins
-INSERT INTO public.magasins (name) VALUES
-  ('Prosuma Plateau'),
-  ('Prosuma Marcory'),
-  ('Prosuma Yopougon'),
-  ('Prosuma Cocody'),
-  ('Prosuma Koumassi'),
-  ('Prosuma Port Bouet'),
-  ('Prosuma Bingerville'),
-  ('Prosuma Abobo'),
-  ('Prosuma Anyama')
+-- Insert default magasins (Prosuma / Casino / Super U group)
+INSERT INTO public.magasins (name, type, zone) VALUES
+  ('Casino Mandarine - Biétry',        'Casino Mandarine', 'Marcory'),
+  ('Casino Mandarine - Marcory Zone 4','Casino Mandarine', 'Marcory'),
+  ('Casino Mandarine - Riviera Golf',   'Casino Mandarine', 'Riviera'),
+  ('Casino Mandarine - Angré 22e',     'Casino Mandarine', 'Angré'),
+  ('Casino Mandarine - Danga',         'Casino Mandarine', 'Danga'),
+  ('Casino Mandarine - 2 Plateaux Vallons','Casino Mandarine','2 Plateaux'),
+  ('Casino Mandarine - M''badon',      'Casino Mandarine', 'M''badon'),
+  ('Casino Mandarine - Riviera 4 Sol Béni','Casino Mandarine','Riviera'),
+  ('Hyper Casino - Prima',             'Hyper Casino',    'Prima'),
+  ('Hyper Casino - Cap Nord',          'Hyper Casino',    'Riviera 3'),
+  ('Hyper Casino - Vallons',           'Hyper Casino',    'Vallons'),
+  ('Super U - Plateau',                'Super U',         'Plateau'),
+  ('Super U - Djibi',                  'Super U',         'Djibi'),
+  ('Super U - Vallons',                'Super U',         'Vallons'),
+  ('Hyper Hayat',                      'Prosuma',         ''),
+  ('Hyper U Abidjan',                  'Prosuma',         ''),
+  ('Sococé - Treichville',             'Prosuma',         'Treichville'),
+  ('Cash Center - Marcory',            'Prosuma',         'Marcory')
 ON CONFLICT (name) DO NOTHING;
 
--- 6. Add reference column for human-readable IDs
+-- 6. Add missing columns for existing databases
+ALTER TABLE public.magasins ADD COLUMN IF NOT EXISTS type TEXT DEFAULT '';
+ALTER TABLE public.magasins ADD COLUMN IF NOT EXISTS zone TEXT DEFAULT '';
 ALTER TABLE public.audits ADD COLUMN IF NOT EXISTS ref TEXT DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_audits_ref ON public.audits(ref);

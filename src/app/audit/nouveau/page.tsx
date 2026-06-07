@@ -9,6 +9,7 @@ import {
 } from "@/lib/audit/zones"
 import type { AuditHeader, ResultItem, CustomItem, AuditMode, Zone, AuditItem } from "@/lib/audit/zones"
 import { ItemCard } from "@/components/audit/ItemCard"
+import { StoreAutocomplete } from "@/components/audit/StoreAutocomplete"
 import { ArrowLeft, Save, Check, Plus, X } from "lucide-react"
 
 export default function NewAuditPage() {
@@ -327,16 +328,11 @@ export default function NewAuditPage() {
 
         <div style={{ marginBottom:16 }}>
           <label style={{ fontSize:13, fontWeight:500, color:"#374151", display:"block", marginBottom:4 }}>Magasin</label>
-          <input
-            list="magasins-list"
+          <StoreAutocomplete
             value={header.magasin}
-            onChange={e => setHeader(p => ({...p, magasin: e.target.value}))}
-            placeholder="Nom du magasin"
-            style={{ width:"100%", padding:"12px", borderRadius:8, border:"0.5px solid #d1d5db", fontSize:14, fontFamily:"inherit" }}
+            onChange={v => setHeader(p => ({...p, magasin: v}))}
+            placeholder="Rechercher un magasin..."
           />
-          <datalist id="magasins-list">
-            {magasins.map(m => <option key={m} value={m} />)}
-          </datalist>
         </div>
 
         <div style={{ marginBottom:16 }}>
