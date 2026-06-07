@@ -12,10 +12,9 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
+        setAll() {
+          // No-op: cookie refresh is handled by middleware
+          // setAll in Server Components crashes Next.js 16
         },
       },
     }
