@@ -401,28 +401,28 @@ export default function NewAuditPage() {
         {answered}/{total} r&eacute;pondu{answered > 1 ? "s" : ""} ({progressPct}%)
       </div>
 
-      <div style={{ display:"flex", gap:6, justifyContent:"center", marginBottom:12 }}>
-        <button onClick={() => { setAuditMode("zone"); setSelectedCat(null) }}
-          style={{
-            padding:"6px 16px", borderRadius:20, border:"none", fontSize:13, cursor:"pointer",
-            background: auditMode === "zone" ? "#ED7D31" : "#f3f4f6",
-            color: auditMode === "zone" ? "#fff" : "#6b7280", fontWeight: auditMode === "zone" ? 500 : 400
-          }}>
-          Par zone
-        </button>
-        <button onClick={() => { setAuditMode("cat"); setSelectedCat(allCats[0] || null) }}
-          style={{
-            padding:"6px 16px", borderRadius:20, border:"none", fontSize:13, cursor:"pointer",
-            background: auditMode === "cat" ? "#ED7D31" : "#f3f4f6",
-            color: auditMode === "cat" ? "#fff" : "#6b7280", fontWeight: auditMode === "cat" ? 500 : 400
-          }}>
-          Par catégorie
-        </button>
-      </div>
+      <div style={{ position:"sticky", top:0, zIndex:10, background:"#fff", borderBottom:"1px solid #e5e7eb", marginLeft:"-1rem", marginRight:"-1rem", padding:"8px 1rem 0" }}>
+        <div style={{ display:"flex", gap:6, justifyContent:"center", marginBottom:6 }}>
+          <button onClick={() => { setAuditMode("zone"); setSelectedCat(null) }}
+            style={{
+              padding:"6px 16px", borderRadius:20, border:"none", fontSize:13, cursor:"pointer",
+              background: auditMode === "zone" ? "#ED7D31" : "#f3f4f6",
+              color: auditMode === "zone" ? "#fff" : "#6b7280", fontWeight: auditMode === "zone" ? 500 : 400
+            }}>
+            Par zone
+          </button>
+          <button onClick={() => { setAuditMode("cat"); setSelectedCat(allCats[0] || null) }}
+            style={{
+              padding:"6px 16px", borderRadius:20, border:"none", fontSize:13, cursor:"pointer",
+              background: auditMode === "cat" ? "#ED7D31" : "#f3f4f6",
+              color: auditMode === "cat" ? "#fff" : "#6b7280", fontWeight: auditMode === "cat" ? 500 : 400
+            }}>
+            Par catégorie
+          </button>
+        </div>
 
-      {auditMode === "zone" ? (
-        <>
-          <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:8, marginBottom:12 }}>
+        {auditMode === "zone" ? (
+          <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:8 }}>
             {zonesLive.map((z, i) => {
               const zoneDone = z.items.filter(it => results[it.id]?.statut).length
               const zoneTotal = z.items.length
@@ -446,8 +446,34 @@ export default function NewAuditPage() {
               )
             })}
           </div>
+        ) : (
+          <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:8 }}>
+            {allCats.map(cat => {
+              const catItems = zonesLive.flatMap(z => z.items).filter(i => i.cat === cat)
+              const catDone = catItems.filter(it => results[it.id]?.statut).length
+              const catTotal = catItems.length
+              return (
+                <button key={cat} onClick={() => setSelectedCat(cat)}
+                  style={{
+                    flexShrink:0, display:"flex", alignItems:"center", gap:4,
+                    padding:"8px 12px", borderRadius:20, border:"none", fontSize:12, cursor:"pointer",
+                    background: selectedCat === cat ? "#ED7D31" : "#f3f4f6",
+                    color: selectedCat === cat ? "#fff" : "#6b7280",
+                    fontWeight: selectedCat === cat ? 500 : 400
+                  }}>
+                  <span>{CAT_ICONS[cat] || "📋"}</span>
+                  <span style={{ whiteSpace:"nowrap" }}>{cat}</span>
+                  <span style={{ fontSize:10, opacity:0.8 }}>{catDone}/{catTotal}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
-          <h2 style={{ fontSize:16, fontWeight:600, color:"#111", margin:"0 0 4px" }}>
+      {auditMode === "zone" ? (
+        <>
+          <h2 style={{ fontSize:16, fontWeight:600, color:"#111", margin:"12px 0 4px" }}>
             {currentZone.icon} {currentZone.label}
           </h2>
           <div style={{ fontSize:12, color:"#9ca3af", marginBottom:12 }}>
@@ -525,28 +551,6 @@ export default function NewAuditPage() {
         </>
       ) : (
         <>
-          <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:8, marginBottom:12 }}>
-            {allCats.map(cat => {
-              const catItems = zonesLive.flatMap(z => z.items).filter(i => i.cat === cat)
-              const catDone = catItems.filter(it => results[it.id]?.statut).length
-              const catTotal = catItems.length
-              return (
-                <button key={cat} onClick={() => setSelectedCat(cat)}
-                  style={{
-                    flexShrink:0, display:"flex", alignItems:"center", gap:4,
-                    padding:"8px 12px", borderRadius:20, border:"none", fontSize:12, cursor:"pointer",
-                    background: selectedCat === cat ? "#ED7D31" : "#f3f4f6",
-                    color: selectedCat === cat ? "#fff" : "#6b7280",
-                    fontWeight: selectedCat === cat ? 500 : 400
-                  }}>
-                  <span>{CAT_ICONS[cat] || "📋"}</span>
-                  <span style={{ whiteSpace:"nowrap" }}>{cat}</span>
-                  <span style={{ fontSize:10, opacity:0.8 }}>{catDone}/{catTotal}</span>
-                </button>
-              )
-            })}
-          </div>
-
           {zoneItems.map((item: AuditItem & { _zoneLabel?: string; _zoneId?: string }) => (
             <ItemCard
               key={item.id}
