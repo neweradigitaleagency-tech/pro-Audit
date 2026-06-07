@@ -498,7 +498,7 @@ export default function NewAuditPage() {
 
           {/* ===== FOOTER ===== */}
           <div style={{ paddingTop:12, borderTop:"0.5px solid #e5e7eb", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:6, marginBottom:16 }}>
-            <span style={{ fontSize:11, color:"#9ca3af" }}>Aperçu généré le {new Date().toLocaleDateString("fr-FR")}</span>
+            <span style={{ fontSize:11, color:"#9ca3af" }}>Aperçu généré le {(() => { const d = new Date(); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}` })()}</span>
             <span style={{ fontSize:11, color:"#9ca3af" }}>Prosuma — ProAudit</span>
           </div>
         </div>

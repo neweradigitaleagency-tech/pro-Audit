@@ -15,7 +15,11 @@ function scoreColor(s: number): string {
 }
 
 function todayFR(): string {
-  return new Date().toLocaleDateString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric" })
+  const d = new Date()
+  const dd = String(d.getDate()).padStart(2, "0")
+  const mm = String(d.getMonth() + 1).padStart(2, "0")
+  const yyyy = d.getFullYear()
+  return `${dd}/${mm}/${yyyy}`
 }
 
 export function generateReportHtml(params: {

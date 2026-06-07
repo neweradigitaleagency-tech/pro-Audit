@@ -93,7 +93,7 @@ export default async function AdminPage() {
                 {p.full_name || "—"}
               </div>
               <div style={{ fontSize:12, color:"#9ca3af" }}>
-                {p.id.slice(0,8)}... · {new Date(p.created_at).toLocaleDateString("fr-FR")}
+                {p.id.slice(0,8)}... · {(() => { const d = new Date(p.created_at); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}` })()}
               </div>
             </div>
             <span style={{
@@ -119,7 +119,7 @@ export default async function AdminPage() {
           }}>
             <div style={{ fontSize:14, color:"#111" }}>{m.name}</div>
             <div style={{ fontSize:12, color:"#9ca3af" }}>
-              {new Date(m.created_at).toLocaleDateString("fr-FR")}
+                            {(() => { const d = new Date(m.created_at); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}` })()}
             </div>
           </div>
         ))}
@@ -138,7 +138,7 @@ export default async function AdminPage() {
             <div>
               <div style={{ fontSize:14, fontWeight:500 }}>{a.magasin_name}</div>
               <div style={{ fontSize:12, color:"#9ca3af" }}>
-                {new Date(a.created_at).toLocaleDateString("fr-FR")}
+                {(() => { const d = new Date(a.created_at); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}` })()}
               </div>
             </div>
             <span style={{
