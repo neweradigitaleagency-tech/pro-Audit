@@ -96,7 +96,21 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
             results={results}
             customItems={customItems}
           />
-          <DownloadPdfButton />
+          <DownloadPdfButton
+            magasinName={audit.magasin_name}
+            date={audit.date}
+            heure={audit.heure || ""}
+            superviseur={audit.superviseur}
+            responsable={audit.responsable || ""}
+            score={score}
+            counts={counts}
+            total={total}
+            zonesActives={zonesActives}
+            results={results}
+            itemsWithAction={itemsWithAction}
+            zonesWithItems={zonesWithItems}
+            ref={audit.ref}
+          />
         </div>
       </div>
 

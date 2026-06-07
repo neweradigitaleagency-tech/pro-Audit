@@ -2,51 +2,44 @@
 
 import { useState } from "react"
 import { Download } from "lucide-react"
+import { generateReportHtml } from "@/lib/generateReportHtml"
+import type { ResultItem } from "@/lib/audit/zones"
 
-export function DownloadPdfButton() {
+interface Props {
+  magasinName: string
+  date: string
+  heure: string
+  superviseur: string
+  responsable: string
+  score: number
+  counts: Record<string, number>
+  total: number
+  zonesActives: { id: string; label: string; icon: string; items: { id: string; cat: string; label: string }[] }[]
+  results: Record<string, ResultItem>
+  itemsWithAction: [string, ResultItem][]
+  zonesWithItems: { id: string; label: string; icon: string; items: { id: string; cat: string; label: string }[] }[]
+  ref?: string
+}
+
+export function DownloadPdfButton(props: Props) {
   const [loading, setLoading] = useState(false)
 
-  async function handleDownload() {
+  function handleDownload() {
     setLoading(true)
     try {
-      const html2canvas = (await import("html2canvas")).default
-      const { jsPDF } = await import("jspdf")
-
-      const el = document.getElementById("report-content")
-      if (!el) return
-
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      })
-
-      const imgData = canvas.toDataURL("image/png")
-      const pdf = new jsPDF({ format: "a4", unit: "mm" })
-      const pdfW = pdf.internal.pageSize.getWidth()
-      const pdfH = (canvas.height * pdfW) / canvas.width
-
-      let remainingH = pdfH
-      let srcY = 0
-      const pageH = pdf.internal.pageSize.getHeight()
-
-      while (remainingH > 0) {
-        const sliceH = Math.min(remainingH, pageH - 20)
-        const canvasSlice = document.createElement("canvas")
-        canvasSlice.width = canvas.width
-        canvasSlice.height = (sliceH * canvas.width) / pdfW
-        const ctx = canvasSlice.getContext("2d")!
-        ctx.drawImage(canvas, 0, srcY, canvas.width, canvasSlice.height, 0, 0, canvas.width, canvasSlice.height)
-        const sliceData = canvasSlice.toDataURL("image/png")
-        pdf.addImage(sliceData, "PNG", 0, 10, pdfW, sliceH)
-        remainingH -= sliceH
-        srcY += canvasSlice.height * (pdfW / canvas.width)
-        if (remainingH > 0) pdf.addPage()
-      }
-
-      pdf.save("rapport-audit.pdf")
+      const html = generateReportHtml(props)
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      const slug = (props.ref || props.magasinName).replace(/[^a-zA-Z0-9]/g, "_")
+      a.download = `rapport-${slug}.html`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
     } catch (e) {
-      console.error("PDF generation error", e)
+      console.error("HTML generation error", e)
     } finally {
       setLoading(false)
     }
@@ -64,7 +57,7 @@ export function DownloadPdfButton() {
       }}
     >
       <Download size={18} />
-      {loading ? "Génération..." : "Télécharger le rapport PDF"}
+      {loading ? "Génération..." : "Télécharger le rapport (HTML/PDF)"}
     </button>
   )
 }
