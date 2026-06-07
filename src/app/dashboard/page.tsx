@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createClient, createActionClient, createServiceClient } from "@/lib/supabase/server";
 import { LogOut, Plus, ClipboardList, AlertTriangle, TrendingUp, Building2, Users } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
 
   async function signOut() {
     "use server";
-    const s = await createClient();
+    const s = await createActionClient();
     await s.auth.signOut();
     redirect("/login");
   }
