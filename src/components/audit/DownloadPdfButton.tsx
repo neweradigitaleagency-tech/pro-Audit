@@ -18,29 +18,29 @@ interface Props {
   results: Record<string, ResultItem>
   itemsWithAction: [string, ResultItem][]
   zonesWithItems: { id: string; label: string; icon: string; items: { id: string; cat: string; label: string }[] }[]
-  ref?: string
+  auditRef?: string
 }
 
 export function DownloadPdfButton(props: Props) {
   const [loading, setLoading] = useState(false)
-  const linkRef = useRef<HTMLAnchorElement | null>(null)
+  const downloadLinkRef = useRef<HTMLAnchorElement | null>(null)
 
   function handleDownload() {
     setLoading(true)
     try {
       const html = generateReportHtml(props)
-      const slug = (props.ref || props.magasinName).replace(/[^a-zA-Z0-9]/g, "_")
+      const slug = (props.auditRef || props.magasinName).replace(/[^a-zA-Z0-9]/g, "_")
 
       const dataUrl = "data:text/html;charset=utf-8," + encodeURIComponent(html)
 
-      if (!linkRef.current) {
+      if (!downloadLinkRef.current) {
         const a = document.createElement("a")
         a.style.display = "none"
         document.body.appendChild(a)
-        linkRef.current = a
+        downloadLinkRef.current = a
       }
 
-      const a = linkRef.current
+      const a = downloadLinkRef.current
       a.href = dataUrl
       a.download = `rapport-${slug}.html`
       a.click()

@@ -23,6 +23,15 @@ function résuméScore(score: number): string {
 }
 
 export default async function AuditDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  try {
+    return await AuditDetailPageInner({ params })
+  } catch (e) {
+    console.error("[AuditDetailPage] Unhandled error:", e)
+    throw e
+  }
+}
+
+async function AuditDetailPageInner({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
@@ -109,7 +118,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
             results={results}
             itemsWithAction={itemsWithAction}
             zonesWithItems={zonesWithItems}
-            ref={audit.ref}
+            auditRef={audit.ref}
           />
         </div>
       </div>

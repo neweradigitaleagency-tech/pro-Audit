@@ -35,11 +35,11 @@ export function generateReportHtml(params: {
   results: Record<string, ResultItem>
   itemsWithAction: [string, ResultItem][]
   zonesWithItems: { id: string; label: string; icon: string; items: { id: string; cat: string; label: string }[] }[]
-  ref?: string
+  auditRef?: string
 }): string {
   const {
     magasinName, date, heure, superviseur, responsable,
-    score, counts, total, zonesActives, results, itemsWithAction, zonesWithItems, ref,
+    score, counts, total, zonesActives, results, itemsWithAction, zonesWithItems, auditRef,
   } = params
 
   const totalS = counts.S || 0
@@ -123,7 +123,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;c
 
 <div style="border-bottom:2px solid #ED7D31;padding-bottom:12px;margin-bottom:20px">
   <div style="font-size:11px;font-weight:500;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Prosuma — ProAudit</div>
-  <div style="font-size:20px;font-weight:500;color:#111;margin-bottom:10px">Rapport d'Audit de Supervision${ref ? ` <span style="font-size:12px;color:#9ca3af;font-weight:400">— Réf. ${ref}</span>` : ""}</div>
+  <div style="font-size:20px;font-weight:500;color:#111;margin-bottom:10px">Rapport d'Audit de Supervision${auditRef ? ` <span style="font-size:12px;color:#9ca3af;font-weight:400">— Réf. ${auditRef}</span>` : ""}</div>
   <div style="display:flex;gap:16px;flex-wrap:wrap">
     ${[["Magasin", magasinName], ["Date", `${date}${heure ? ` · ${heure}` : ""}`], ["Superviseur", superviseur], ...(responsable ? [["Responsable", responsable]] : [])].map(([l, v]) => `<div style="font-size:13px;color:#6b7280"><strong style="color:#111;font-weight:500">${l} :</strong> ${v}</div>`).join("")}
   </div>
