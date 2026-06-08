@@ -23,7 +23,7 @@ export const ItemCard = memo(function ItemCard({
   item, result, zoneLabel, showZone, isCustom, expanded,
   onStatut, onField, onToggle, onAddPhoto, onRemovePhoto, onRemoveCustom
 }: ItemCardProps) {
-  const fileRef = useRef<HTMLInputElement>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
   const isExpanded = expanded ?? (result?.statut === "M" || result?.statut === "NS" || (result?.comment || result?.action || result?.deadlineType))
   const badge = getDeadlineBadge(result)
 
@@ -152,7 +152,7 @@ export const ItemCard = memo(function ItemCard({
           )}
 
           <div style={{ marginTop:10 }}>
-            <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Photos</div>
+            <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Photos {(result?.photoUrls?.length || 0) > 0 && `(${result?.photoUrls?.length})`}</div>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
               {(result?.photoUrls || []).map(p => (
                 <div key={p.name} style={{ position:"relative", width:56, height:56 }}>
@@ -170,24 +170,25 @@ export const ItemCard = memo(function ItemCard({
                   </button>
                 </div>
               ))}
-              <button
-                onClick={() => fileRef.current?.click()}
-                style={{
-                  width:56, height:56, borderRadius:6, border:"1px dashed #d1d5db",
-                  background:"#f9fafb", cursor:"pointer", display:"flex",
-                  alignItems:"center", justifyContent:"center", fontSize:20, color:"#9ca3af"
-                }}
-                aria-label="Ajouter photo"
-              >
-                +
-              </button>
-              <input
-                ref={fileRef}
-                type="file" accept="image/*" multiple
-                style={{ display:"none" }}
-                onChange={e => { if (e.target.files) { onAddPhoto(item.id, e.target.files); e.target.value = "" } }}
-              />
             </div>
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              style={{
+                width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+                padding:"10px", borderRadius:8, border:"1px dashed #d1d5db",
+                background:"#f9fafb", cursor:"pointer", fontSize:13, color:"#111",
+                minHeight:44, marginTop:6,
+              }}
+              aria-label="Ajouter une photo"
+            >
+              <span style={{ fontSize:16 }}>📷</span> Ajouter une photo
+            </button>
+            <input
+              ref={photoInputRef}
+              type="file" accept="image/*" multiple
+              style={{ display:"none" }}
+              onChange={e => { if (e.target.files) { onAddPhoto(item.id, e.target.files); e.target.value = "" } }}
+            />
           </div>
         </div>
       )}

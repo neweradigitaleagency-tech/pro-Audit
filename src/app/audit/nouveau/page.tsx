@@ -10,12 +10,13 @@ import {
 import type { AuditHeader, ResultItem, CustomItem, AuditMode, Zone, AuditItem } from "@/lib/audit/zones"
 import { ItemCard } from "@/components/audit/ItemCard"
 import { StoreAutocomplete } from "@/components/audit/StoreAutocomplete"
-import { ArrowLeft, Save, Check, Plus, X } from "lucide-react"
+import { ArrowLeft, Save, Check, Plus, X, Home } from "lucide-react"
+import { toast } from "sonner"
 
 export default function NewAuditPage() {
   const router = useRouter()
 
-  const [page, setPage] = useState<"header" | "audit" | "summary">("header")
+  const [page, setPage] = useState<"loading" | "header" | "audit" | "summary">("loading")
   const [header, setHeader] = useState<AuditHeader>({
     date: today(), heure: "", superviseur: "", responsable: "", magasin: ""
   })
@@ -54,6 +55,14 @@ export default function NewAuditPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) await loadUserName(supabase, session.user)
       else setNameLoaded(true)
+      const params = new URLSearchParams(window.location.search)
+      const draftId = params.get("draft")
+      if (draftId) {
+        await loadDraft(draftId)
+        setPage("audit")
+      } else {
+        setPage("header")
+      }
     })()
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) loadUserName(supabase, session.user)
@@ -99,7 +108,7 @@ export default function NewAuditPage() {
 
   useEffect(() => {
     if (page !== "audit") return
-    autoSaveRef.current = setInterval(saveDraft, 30000)
+    autoSaveRef.current = setInterval(saveDraftLight, 60000)
     return () => { if (autoSaveRef.current) clearInterval(autoSaveRef.current) }
   }, [page, header, results, customItems, zoneIdx, auditMode, selectedCat])
 
@@ -140,16 +149,31 @@ export default function NewAuditPage() {
 
   const addPhoto = useCallback((itemId: string, files: FileList) => {
     Array.from(files).forEach(f => {
+      const img = new Image()
       const reader = new FileReader()
       reader.onload = () => {
-        setResults(prev => {
-          const r = { ...prev }
-          const cur = { ...(r[itemId] || {}) }
-          const urls = [...(cur.photoUrls || []), { name: f.name, url: reader.result as string }]
-          cur.photoUrls = urls
-          r[itemId] = cur
-          return r
-        })
+        img.src = reader.result as string
+        img.onload = () => {
+          const MAX = 800
+          let w = img.naturalWidth, h = img.naturalHeight
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX }
+            else { w = Math.round(w * MAX / h); h = MAX }
+          }
+          const canvas = document.createElement("canvas")
+          canvas.width = w; canvas.height = h
+          const ctx = canvas.getContext("2d")!
+          ctx.drawImage(img, 0, 0, w, h)
+          const compressed = canvas.toDataURL("image/jpeg", 0.7)
+          setResults(prev => {
+            const r = { ...prev }
+            const cur = { ...(r[itemId] || {}) }
+            const urls = [...(cur.photoUrls || []), { name: f.name, url: compressed }]
+            cur.photoUrls = urls
+            r[itemId] = cur
+            return r
+          })
+        }
       }
       reader.readAsDataURL(f)
     })
@@ -196,6 +220,63 @@ export default function NewAuditPage() {
     } catch { /* ignore */ }
   }
 
+  async function loadDraft(draftId: string) {
+    try {
+      const res = await fetch(`/api/audits?id=${draftId}`)
+      if (!res.ok) return
+      const audit = await res.json()
+      setAuditId(audit.id)
+      setHeader({
+        magasin: audit.magasin_name || "",
+        superviseur: audit.superviseur || "",
+        responsable: audit.responsable || "",
+        date: audit.date || today(),
+        heure: audit.heure || "",
+      })
+      if (audit.results) setResults(JSON.parse(JSON.stringify(audit.results)))
+      if (audit.custom_items) setCustomItems(JSON.parse(JSON.stringify(audit.custom_items)))
+    } catch { /* ignore */ }
+  }
+
+  async function saveDraftLight() {
+    const resultsLight: Record<string, ResultItem> = {}
+    for (const [k, v] of Object.entries(results)) {
+      if (!v?.statut) continue
+      const { photoUrls, ...rest } = v
+      resultsLight[k] = rest
+    }
+    const counts = computeCounts(results)
+    const score = scoreOf(results)
+    try {
+      const payload = {
+        magasin_name: header.magasin,
+        superviseur: header.superviseur,
+        responsable: header.responsable,
+        date: header.date,
+        heure: header.heure,
+        results: JSON.parse(JSON.stringify(resultsLight)),
+        custom_items: JSON.parse(JSON.stringify(customItems)),
+        counts: JSON.parse(JSON.stringify(counts)),
+        score,
+        status: "draft" as const,
+      }
+      if (auditId) {
+        await fetch("/api/audits", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, id: auditId }),
+        });
+      } else {
+        const res = await fetch("/api/audits", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) { const d = await res.json(); if (d.id) setAuditId(d.id); }
+      }
+    } catch { /* silent auto-save */ }
+  }
+
   async function saveDraft() {
     const counts = computeCounts(results)
     const score = scoreOf(results)
@@ -218,18 +299,24 @@ export default function NewAuditPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...payload, id: auditId }),
         });
-        if (!res.ok) { const d = await res.json(); console.error("saveDraft error", d.error); return; }
+        if (!res.ok) { const d = await res.json(); console.error("saveDraft error", d.error); toast.error("Erreur lors de la sauvegarde"); return; }
       } else {
         const res = await fetch("/api/audits", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (!res.ok) { const d = await res.json(); console.error("saveDraft error", d.error); return; }
+        if (!res.ok) { const d = await res.json(); console.error("saveDraft error", d.error); toast.error("Erreur lors de la sauvegarde"); return; }
         const d = await res.json();
         if (d.id) setAuditId(d.id)
       }
-    } catch (e) { console.error("saveDraft error", e) }
+      toast.success("Brouillon sauvegardé")
+    } catch (e) { console.error("saveDraft error", e); toast.error("Erreur de connexion") }
+  }
+
+  async function saveDraftAndReturn() {
+    await saveDraft()
+    router.push("/dashboard")
   }
 
   async function saveFinal() {
@@ -276,6 +363,18 @@ export default function NewAuditPage() {
   }
 
   const progressPct = totalItems() > 0 ? Math.round(totalAnswered() / totalItems() * 100) : 0
+
+  if (page === "loading") {
+    return (
+      <div style={{ maxWidth:560, margin:"0 auto", padding:"1.5rem 1rem", display:"flex", alignItems:"center", justifyContent:"center", minHeight:"80vh" }}>
+        <div style={{ textAlign:"center" }}>
+          <div style={{ width:32, height:32, borderRadius:"50%", border:"3px solid #e5e7eb", borderTopColor:"#ED7D31", animation:"spin .6s linear infinite", margin:"0 auto 12px" }} />
+          <div style={{ fontSize:14, color:"#9ca3af" }}>Chargement...</div>
+        </div>
+        <style>{`@keyframes spin { to { transform:rotate(360deg) } }`}</style>
+      </div>
+    )
+  }
 
   if (page === "summary") {
     const counts = computeCounts(results)
@@ -362,12 +461,12 @@ export default function NewAuditPage() {
           )}
 
           {/* ===== SCORE BANNER ===== */}
-          <div style={{
+          <div className="score-banner" style={{
             display:"grid", gridTemplateColumns:"auto 1fr", gap:16, alignItems:"center",
             background:"#f9fafb", borderRadius:10, padding:"14px 18px", marginBottom:20,
             border:"0.5px solid #e5e7eb",
           }}>
-            <div style={{
+            <div className="score-circle" style={{
               width:72, height:72, borderRadius:"50%", border:`3px solid ${scoreColor(score)}`,
               display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
             }}>
@@ -385,7 +484,7 @@ export default function NewAuditPage() {
               <div style={{ height:6, borderRadius:3, background:"#e5e7eb", overflow:"hidden", marginBottom:8 }}>
                 <div style={{ height:"100%", borderRadius:3, width:`${score}%`, background: score >= 80 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626" }} />
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+              <div className="stat-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
                 {[
                   { n: totalS, l: "Satisfaisant", cls:"#dcfce7", tc:"#16a34a" },
                   { n: totalM, l: "Moyen", cls:"#fef3c7", tc:"#d97706" },
@@ -531,8 +630,8 @@ export default function NewAuditPage() {
     return (
       <div style={{ maxWidth:560, margin:"0 auto", padding:"1.5rem 1rem" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
-          <button onClick={() => router.back()} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }} aria-label="Retour">
-            <ArrowLeft size={20} color="#111" />
+          <button onClick={() => router.back()} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:44, minHeight:44, display:"flex", alignItems:"center", justifyContent:"center" }} aria-label="Retour">
+            <ArrowLeft size={24} color="#111" />
           </button>
           <h1 style={{ fontSize:20, fontWeight:600, color:"#111", margin:0 }}>Nouvel audit</h1>
         </div>
@@ -576,7 +675,7 @@ export default function NewAuditPage() {
           />
         </div>
 
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:24 }}>
+        <div className="date-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:24 }}>
           <div>
             <label style={{ fontSize:13, fontWeight:500, color:"#374151", display:"block", marginBottom:4 }}>Date</label>
             <input type="date" value={header.date}
@@ -618,20 +717,26 @@ export default function NewAuditPage() {
   const answered = totalAnswered()
 
   return (
-    <div style={{ maxWidth:560, margin:"0 auto", padding:"1rem" }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-        <button onClick={() => setPage("header")} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }} aria-label="Retour">
-          <ArrowLeft size={20} color="#111" />
-        </button>
+      <div style={{ maxWidth:560, margin:"0 auto", padding:"1rem" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, minHeight:44 }}>
+          <button onClick={() => setPage("header")} style={{ background:"none", border:"none", cursor:"pointer", minWidth:44, minHeight:44, display:"flex", alignItems:"center", justifyContent:"center" }} aria-label="Retour">
+            <ArrowLeft size={24} color="#111" />
+          </button>
         <div style={{ fontSize:12, color:"#6b7280", textAlign:"center" }}>
           {header.magasin} · {header.date}
         </div>
-        <div style={{ display:"flex", gap:6 }}>
-          <button onClick={saveDraft} style={{ background:"none", border:"none", cursor:"pointer", padding:4, color:"#6b7280" }} aria-label="Sauvegarder brouillon">
+        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          <button onClick={saveDraft} style={{ background:"none", border:"none", cursor:"pointer", padding:4, color:"#6b7280" }} aria-label="Sauvegarder brouillon" title="Sauvegarder">
             <Save size={18} />
           </button>
-          <button onClick={saveFinal} disabled={saving} style={{ background:"none", border:"none", cursor:"pointer", padding:4, color:"#16a34a" }} aria-label="Finaliser">
+          <button onClick={saveFinal} disabled={saving} style={{ background:"none", border:"none", cursor:"pointer", padding:4, color:"#16a34a" }} aria-label="Finaliser" title="Finaliser">
             <Check size={18} />
+          </button>
+          <button onClick={saveDraftAndReturn} disabled={saving} style={{
+            background:"none", border:"none", cursor:"pointer", padding:4, color:"#ED7D31",
+            display:"flex", alignItems:"center", gap:2, fontSize:12, fontWeight:500,
+          }} aria-label="Sauvegarder et retourner" title="Sauvegarder et retourner à l'accueil">
+            <Home size={16} /> <span className="hide-mobile">Accueil</span>
           </button>
         </div>
       </div>
@@ -780,18 +885,18 @@ export default function NewAuditPage() {
               disabled={zoneIdx === 0}
               style={{
                 flex:1, padding:"12px", borderRadius:8, border:"0.5px solid #e5e7eb",
-                background:"#fff", color:"#111", fontSize:14, cursor: zoneIdx === 0 ? "not-allowed" : "pointer", opacity: zoneIdx === 0 ? 0.5 : 1
+                background:"#fff", color:"#111", fontSize:14, cursor: zoneIdx === 0 ? "not-allowed" : "pointer", opacity: zoneIdx === 0 ? 0.5 : 1, minHeight:48
               }}>
               Précédent
             </button>
             {zoneIdx < zonesLive.length - 1 ? (
               <button onClick={() => setZoneIdx(zoneIdx + 1)}
-                style={{ flex:1, padding:"12px", borderRadius:8, border:"none", background:"#ED7D31", color:"#fff", fontSize:14, cursor:"pointer" }}>
+                style={{ flex:1, padding:"12px", borderRadius:8, border:"none", background:"#ED7D31", color:"#fff", fontSize:14, cursor:"pointer", minHeight:48 }}>
                 Zone suivante →
               </button>
             ) : (
               <button onClick={() => setPage("summary")}
-                style={{ flex:1, padding:"12px", borderRadius:8, border:"none", background:"#0284c7", color:"#fff", fontSize:14, cursor:"pointer" }}>
+                style={{ flex:1, padding:"12px", borderRadius:8, border:"none", background:"#0284c7", color:"#fff", fontSize:14, cursor:"pointer", minHeight:48 }}>
                 Aperçu du rapport →
               </button>
             )}
@@ -821,7 +926,7 @@ export default function NewAuditPage() {
             style={{
               width:"100%", padding:"14px", borderRadius:8, border:"none",
               background:"#0284c7", color:"#fff", fontSize:15, fontWeight:500,
-              cursor:"pointer", marginTop:16, marginBottom:40
+              cursor:"pointer", marginTop:16, marginBottom:40, minHeight:48
             }}>
             Aperçu du rapport →
           </button>

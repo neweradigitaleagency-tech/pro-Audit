@@ -52,6 +52,33 @@ export async function POST(req: Request) {
   }
 }
 
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get("id")
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const supabase = await createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return NextResponse.json({ error: "Non connecté" }, { status: 401 })
+
+    const svc = createServiceClient()
+    const { data: audit, error } = await svc
+      .from("audits")
+      .select("id, magasin_name, superviseur, responsable, date, heure, results, custom_items, status")
+      .eq("id", id)
+      .single()
+
+    if (error || !audit) return NextResponse.json({ error: "Audit introuvable" }, { status: 404 })
+    return NextResponse.json(audit)
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Erreur serveur" },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PUT(req: Request) {
   try {
     const body = await req.json();

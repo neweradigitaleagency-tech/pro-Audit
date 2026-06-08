@@ -87,7 +87,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
             {audit.ref && <span style={{ fontSize:11, color:"#9ca3af" }}>Réf. {audit.ref}</span>}
           </div>
         </div>
-        <div style={{ display:"flex", gap:6 }}>
+        <div className="btn-row" style={{ display:"flex", gap:6 }}>
           <DownloadExcelButton
             magasinName={audit.magasin_name}
             date={audit.date}
@@ -146,12 +146,12 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
         )}
 
         {/* ===== SCORE BANNER ===== */}
-        <div style={{
+        <div className="score-banner" style={{
           display:"grid", gridTemplateColumns:"auto 1fr", gap:16, alignItems:"center",
           background:"#f9fafb", borderRadius:10, padding:"14px 18px", marginBottom:20,
           border:"0.5px solid #e5e7eb",
         }}>
-          <div style={{
+          <div className="score-circle" style={{
             width:72, height:72, borderRadius:"50%", border:`3px solid ${scoreColor(score)}`,
             display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
           }}>
@@ -171,7 +171,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
               <div style={{ height:"100%", borderRadius:3, width:`${score}%`, background: score >= 80 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626" }} />
             </div>
             {/* Stats row */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+            <div className="stat-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
               {[
                 { n: totalS, l: "Satisfaisant", cls:"#dcfce7", tc:"#16a34a" },
                 { n: totalM, l: "Moyen", cls:"#fef3c7", tc:"#d97706" },
@@ -295,15 +295,15 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
       </div>
 
       {/* ===== BOTTOM BUTTONS ===== */}
-      <div style={{ display:"flex", gap:8, marginTop:20 }}>
+      <div className="btn-row" style={{ display:"flex", gap:8, marginTop:20 }}>
         {audit.status === "draft" && (
           <Link href={`/audit/nouveau?draft=${audit.id}`}
-            style={{ padding:"10px 18px", borderRadius:8, background:"#ED7D31", color:"#fff", fontSize:13, textDecoration:"none", fontWeight:500 }}>
+            style={{ padding:"12px 18px", borderRadius:8, background:"#ED7D31", color:"#fff", fontSize:13, textDecoration:"none", fontWeight:500, textAlign:"center", minHeight:44 }}>
             Reprendre le brouillon
           </Link>
         )}
         <Link href="/dashboard"
-          style={{ padding:"10px 18px", borderRadius:8, background:"#fff", color:"#111", fontSize:13, textDecoration:"none", border:"0.5px solid #e5e7eb", display:"flex", alignItems:"center", gap:6, fontWeight:500 }}>
+          style={{ padding:"12px 18px", borderRadius:8, background:"#fff", color:"#111", fontSize:13, textDecoration:"none", border:"0.5px solid #e5e7eb", display:"flex", alignItems:"center", justifyContent:"center", gap:6, fontWeight:500, minHeight:44, flex:1 }}>
           <LayoutDashboard size={16} /> Retour dashboard
         </Link>
       </div>

@@ -15,16 +15,78 @@
   --color-info: #0284c7;
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   color: var(--color-text);
   background: #ffffff;
   font-family: system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
-html { scroll-behavior: smooth; }
+img, video, canvas { max-width: 100%; height: auto; }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #f9fafb; }
-::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+input, select, textarea, button { font-size: 16px !important; }
+input, button, a, select, textarea { touch-action: manipulation; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+/* === RESPONSIVE === */
+
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+  .stat-grid { grid-template-columns: repeat(2,1fr) !important; }
+}
+
+@media (max-width: 640px) {
+  .reco-grid { grid-template-columns: 1fr !important; }
+  .score-banner { grid-template-columns: 1fr !important; text-align: center; }
+  .score-circle { margin: 0 auto; }
+  .btn-row { flex-direction: row !important; flex-wrap: wrap !important; gap: 4px !important; }
+  .btn-row a, .btn-row button { width: auto !important; flex: 1 !important; min-width: 0 !important; justify-content: center; }
+  .hide-mobile { display: none !important; }
+  .download-btn { padding: 7px 10px !important; font-size: 12px !important; gap: 3px !important; }
+  .download-btn svg { width: 14px !important; height: 14px !important; }
+}
+
+@media (max-width: 480px) {
+  body { font-size: 15px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+  .stat-grid { grid-template-columns: 1fr 1fr !important; }
+  .date-grid { grid-template-columns: 1fr !important; }
+  .zone-row { flex-wrap: wrap !important; }
+  .info-row { flex-direction: column !important; gap: 4px !important; }
+  .download-btn { padding: 6px 8px !important; font-size: 11px !important; }
+  .download-btn svg { width: 12px !important; height: 12px !important; }
+}
+
+@media (max-width: 360px) {
+  .btn-row { flex-direction: column !important; }
+  .btn-row a, .btn-row button { width: 100% !important; }
+  .download-btn { padding: 5px 7px !important; font-size: 10px !important; }
+  .download-btn svg { width: 11px !important; height: 11px !important; }
+}
+
+/* Fix sticky toolbar overlap on mobile */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .sticky-top { padding-top: env(safe-area-inset-top); }
+}
+
+/* Prevent zoom on input focus (iOS) */
+input, select, textarea {
+  font-size: 16px !important;
+}

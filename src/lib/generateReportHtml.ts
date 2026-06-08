@@ -113,26 +113,34 @@ export function generateReportHtml(params: {
 <title>Rapport d'audit - ${magasinName}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#111;background:#fff;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#111;background:#fff;padding:0;-webkit-text-size-adjust:100%}
 .doc{max-width:680px;margin:0 auto;padding:2rem 1rem}
 @media print{body{padding:0}.doc{padding:0;max-width:100%}button,.no-print{display:none!important}}
+@media (max-width:600px){
+  .doc{padding:1rem 0.75rem}
+  .score-wrap{grid-template-columns:1fr!important;text-align:center}
+  .score-circle{margin:0 auto}
+  .stat-grid{grid-template-columns:repeat(2,1fr)!important}
+  .info-row{flex-direction:column;gap:4px!important}
+  .header-title{font-size:18px!important}
+}
 </style>
 </head>
 <body>
 <div class="doc">
 
-<div style="border-bottom:2px solid #ED7D31;padding-bottom:12px;margin-bottom:20px">
-  <div style="font-size:11px;font-weight:500;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Prosuma — ProAudit</div>
-  <div style="font-size:20px;font-weight:500;color:#111;margin-bottom:10px">Rapport d'Audit de Supervision${auditRef ? ` <span style="font-size:12px;color:#9ca3af;font-weight:400">— Réf. ${auditRef}</span>` : ""}</div>
-  <div style="display:flex;gap:16px;flex-wrap:wrap">
-    ${[["Magasin", magasinName], ["Date", `${date}${heure ? ` · ${heure}` : ""}`], ["Superviseur", superviseur], ...(responsable ? [["Responsable", responsable]] : [])].map(([l, v]) => `<div style="font-size:13px;color:#6b7280"><strong style="color:#111;font-weight:500">${l} :</strong> ${v}</div>`).join("")}
+  <div style="border-bottom:2px solid #ED7D31;padding-bottom:12px;margin-bottom:20px">
+    <div style="font-size:11px;font-weight:500;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Prosuma — ProAudit</div>
+    <div class="header-title" style="font-size:20px;font-weight:500;color:#111;margin-bottom:10px">Rapport d'Audit de Supervision${auditRef ? ` <span style="font-size:12px;color:#9ca3af;font-weight:400">— Réf. ${auditRef}</span>` : ""}</div>
+    <div class="info-row" style="display:flex;gap:16px;flex-wrap:wrap">
+      ${[["Magasin", magasinName], ["Date", `${date}${heure ? ` · ${heure}` : ""}`], ["Superviseur", superviseur], ...(responsable ? [["Responsable", responsable]] : [])].map(([l, v]) => `<div style="font-size:13px;color:#6b7280"><strong style="color:#111;font-weight:500">${l} :</strong> ${v}</div>`).join("")}
+    </div>
   </div>
-</div>
 
 ${score < 60 ? `<div style="background:#fff7ed;border:0.5px solid #fed7aa;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:12px;color:#9a3412;line-height:1.6"><strong>Attention :</strong> Défaillances significatives dans plusieurs zones. Des actions correctives immédiates sont indispensables.</div>` : ""}
 
-<div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:#f9fafb;border-radius:10px;padding:14px 18px;margin-bottom:20px;border:0.5px solid #e5e7eb">
-  <div style="width:72px;height:72px;border-radius:50%;border:3px solid ${scoreColor(score)};display:flex;flex-direction:column;align-items:center;justify-content:center">
+<div class="score-wrap" style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:#f9fafb;border-radius:10px;padding:14px 18px;margin-bottom:20px;border:0.5px solid #e5e7eb">
+  <div class="score-circle" style="width:72px;height:72px;border-radius:50%;border:3px solid ${scoreColor(score)};display:flex;flex-direction:column;align-items:center;justify-content:center">
     <div style="font-size:22px;font-weight:500;color:${scoreColor(score)};line-height:1">${score}%</div>
     <div style="font-size:9px;color:${scoreColor(score)};margin-top:1px">${score < 60 ? "CRITIQUE" : interprétation(score).toUpperCase()}</div>
   </div>
@@ -140,7 +148,7 @@ ${score < 60 ? `<div style="background:#fff7ed;border:0.5px solid #fed7aa;border
     <div style="font-size:13px;font-weight:500;color:#111;margin-bottom:4px">Score de conformité globale — Niveau ${interprétation(score)}</div>
     <div style="font-size:12px;color:#6b7280;line-height:1.5;margin-bottom:8px">Sur ${total} critère${total > 1 ? "s" : ""} évalués, ${totalS} satisfaisant${totalS > 1 ? "s" : ""}.${itemsWithAction.length > 0 ? ` ${itemsWithAction.length} point${itemsWithAction.length > 1 ? "s" : ""} nécessite${itemsWithAction.length > 1 ? "nt" : ""} un plan d'action correctif.` : ""}</div>
     <div style="height:6px;border-radius:3px;background:#e5e7eb;overflow:hidden;margin-bottom:8px"><div style="height:100%;border-radius:3px;width:${score}%;background:${scoreColor(score)}"></div></div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+    <div class="stat-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
       ${[
         { n: totalS, l: "Satisfaisant", c: "#dcfce7", t: "#16a34a" },
         { n: totalM, l: "Moyen", c: "#fef3c7", t: "#d97706" },

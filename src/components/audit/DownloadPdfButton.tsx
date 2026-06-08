@@ -56,15 +56,17 @@ export function DownloadPdfButton(props: Props) {
     <button
       onClick={handleDownload}
       disabled={loading}
+      className="download-btn"
       style={{
-        display:"flex", alignItems:"center", gap:6,
-        padding:"12px 20px", borderRadius:8, border:"none",
+        display:"inline-flex", alignItems:"center", justifyContent:"center", gap:4,
+        padding:"8px 12px", borderRadius:6, border:"none",
         background: loading ? "#d1d5db" : "#ED7D31", color:"#fff",
-        fontSize:14, fontWeight:500, cursor: loading ? "wait" : "pointer",
+        fontSize:13, fontWeight:500, cursor: loading ? "wait" : "pointer",
+        whiteSpace:"nowrap", lineHeight:1,
       }}
     >
-      <Download size={18} />
-      {loading ? "Génération..." : "Télécharger le rapport HTML"}
+      <Download size={15} />
+      {loading ? "..." : "PDF"}
     </button>
   )
 }
