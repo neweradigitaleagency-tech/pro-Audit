@@ -243,8 +243,15 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:11, color:"#6b7280", marginBottom:2 }}>{zone.label}</div>
                         <div style={{ fontSize:13, color:"#111", lineHeight:1.4 }}>{item.label}</div>
-                        {r.action && <div style={{ fontSize:12, color:"#ED7D31", marginTop:2 }}>Action : {r.action}</div>}
                         {r.comment && <div style={{ fontSize:11, color:"#6b7280", fontStyle:"italic", marginTop:2 }}>{r.comment}</div>}
+                        {r.action && <div style={{ fontSize:12, color:"#ED7D31", marginTop:2 }}>Action : {r.action}</div>}
+                        {(r.photoUrls?.length || 0) > 0 && (
+                          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:6 }}>
+                            {r.photoUrls!.map((ph, i) => (
+                              <img key={i} src={ph.url} alt={ph.name} style={{ width:56, height:56, borderRadius:6, objectFit:"cover", border:"0.5px solid #e5e7eb" }} />
+                            ))}
+                          </div>
+                        )}
                       </div>
                       {r.deadlineType && (
                         <span style={{ fontSize:11, whiteSpace:"nowrap", color:"#6b7280", flexShrink:0 }}>

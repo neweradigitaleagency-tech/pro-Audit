@@ -75,13 +75,18 @@ export function generateReportHtml(params: {
         if (!r?.statut || r.statut === "S" || r.statut === "NA") return []
         const isBad = r.statut === "NS"
         const ddl = r.deadlineType === "immediat" ? "🔴 Immédiat" : r.deadlineType === "continu" ? "🔄 Continu" : r.deadline ? `📅 ${r.deadline}` : ""
+        const photos = r.photoUrls || []
+        const photosHtml = photos.length > 0
+          ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${photos.map((ph: {name:string;url:string}) => `<img src="${ph.url}" alt="${ph.name}" style="width:56px;height:56px;border-radius:6px;object-fit:cover;border:0.5px solid #e5e7eb" />`).join("")}</div>`
+          : ""
         return `<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:8px;border:${isBad ? "0.5px solid #fecaca" : "0.5px solid #fde68a"};background:${isBad ? "#fff5f5" : "#fffbeb"}">
           <span style="font-size:13px;flex-shrink:0;margin-top:1px">${isBad ? "✗" : "⚠️"}</span>
           <div style="flex:1">
             <div style="font-size:11px;color:#6b7280;margin-bottom:2px">${z.label}</div>
             <div style="font-size:13px;color:#111;line-height:1.4">${item.label}</div>
-            ${r.action ? `<div style="font-size:12px;color:#ED7D31;margin-top:2px">Action : ${r.action}</div>` : ""}
             ${r.comment ? `<div style="font-size:11px;color:#6b7280;font-style:italic;margin-top:2px">${r.comment}</div>` : ""}
+            ${r.action ? `<div style="font-size:12px;color:#ED7D31;margin-top:2px">Action : ${r.action}</div>` : ""}
+            ${photosHtml}
           </div>
           ${ddl ? `<span style="font-size:11px;white-space:nowrap;color:#6b7280;flex-shrink:0">${ddl}</span>` : ""}
         </div>`
