@@ -154,7 +154,7 @@ export default function NewAuditPage() {
       reader.onload = () => {
         img.src = reader.result as string
         img.onload = () => {
-          const MAX = 800
+          const MAX = 1200
           let w = img.naturalWidth, h = img.naturalHeight
           if (w > MAX || h > MAX) {
             if (w > h) { h = Math.round(h * MAX / w); w = MAX }
@@ -164,7 +164,7 @@ export default function NewAuditPage() {
           canvas.width = w; canvas.height = h
           const ctx = canvas.getContext("2d")!
           ctx.drawImage(img, 0, 0, w, h)
-          const compressed = canvas.toDataURL("image/jpeg", 0.7)
+          const compressed = canvas.toDataURL("image/jpeg", 0.85)
           setResults(prev => {
             const r = { ...prev }
             const cur = { ...(r[itemId] || {}) }
@@ -242,8 +242,7 @@ export default function NewAuditPage() {
     const resultsLight: Record<string, ResultItem> = {}
     for (const [k, v] of Object.entries(results)) {
       if (!v?.statut) continue
-      const { photoUrls, ...rest } = v
-      resultsLight[k] = rest
+      resultsLight[k] = v
     }
     const counts = computeCounts(results)
     const score = scoreOf(results)
@@ -551,8 +550,15 @@ export default function NewAuditPage() {
                         <div style={{ flex:1 }}>
                           <div style={{ fontSize:11, color:"#6b7280", marginBottom:2 }}>{zone.label}</div>
                           <div style={{ fontSize:13, color:"#111", lineHeight:1.4 }}>{item.label}</div>
-                          {r.action && <div style={{ fontSize:12, color:"#ED7D31", marginTop:2 }}>Action : {r.action}</div>}
                           {r.comment && <div style={{ fontSize:11, color:"#6b7280", fontStyle:"italic", marginTop:2 }}>{r.comment}</div>}
+                          {r.action && <div style={{ fontSize:12, color:"#ED7D31", marginTop:2 }}>Action : {r.action}</div>}
+                          {(r.photoUrls?.length || 0) > 0 && (
+                            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:6 }}>
+                              {r.photoUrls!.map((ph, i) => (
+                                <img key={i} src={ph.url} alt={ph.name} style={{ width:56, height:56, borderRadius:6, objectFit:"cover", border:"0.5px solid #e5e7eb" }} />
+                              ))}
+                            </div>
+                          )}
                         </div>
                         {r.deadlineType && (
                           <span style={{ fontSize:11, whiteSpace:"nowrap", color:"#6b7280", flexShrink:0 }}>

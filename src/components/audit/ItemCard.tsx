@@ -185,7 +185,7 @@ export const ItemCard = memo(function ItemCard({
             </button>
             <input
               ref={photoInputRef}
-              type="file" accept="image/*" multiple
+              type="file" accept="image/*" capture="environment" multiple
               style={{ display:"none" }}
               onChange={e => { if (e.target.files) { onAddPhoto(item.id, e.target.files); e.target.value = "" } }}
             />
