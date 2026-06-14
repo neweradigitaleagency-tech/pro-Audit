@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Download } from "lucide-react"
-import * as XLSX from "xlsx"
+import type * as XLSXType from "xlsx"
 import { ZONES, STATUTS } from "@/lib/audit/zones"
 import type { ResultItem } from "@/lib/audit/zones"
 
@@ -43,6 +43,8 @@ export function DownloadExcelButton({ magasinName, date, superviseur, score, res
   async function handleDownload() {
     setLoading(true)
     try {
+      const XLSX = await import("xlsx") as unknown as typeof XLSXType
+
       const rows: Record<string, string>[] = []
 
       for (const [itemId, r] of Object.entries(results)) {

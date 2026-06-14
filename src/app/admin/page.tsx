@@ -18,25 +18,28 @@ export default async function AdminPage() {
 
   if (!myProfile || myProfile.role !== "admin") redirect("/dashboard")
 
-  const { data: profiles } = await svc
-    .from("profiles")
-    .select("id, full_name, role, created_at")
-    .order("created_at", { ascending: false })
+  const [profilesResult, magasinsResult, totalAuditsResult, latestAuditsResult] = await Promise.all([
+    svc.from("profiles")
+      .select("id, full_name, role, created_at")
+      .order("created_at", { ascending: false }),
 
-  const { data: magasins } = await svc
-    .from("magasins")
-    .select("id, name, created_at")
-    .order("name")
+    svc.from("magasins")
+      .select("id, name, created_at")
+      .order("name"),
 
-  const { count: totalAudits } = await svc
-    .from("audits")
-    .select("id", { count: "exact", head: true })
+    svc.from("audits")
+      .select("id", { count: "exact", head: true }),
 
-  const { data: latestAudits } = await svc
-    .from("audits")
-    .select("id, magasin_name, score, created_at")
-    .order("created_at", { ascending: false })
-    .limit(5)
+    svc.from("audits")
+      .select("id, magasin_name, score, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ])
+
+  const profiles = profilesResult.data
+  const magasins = magasinsResult.data
+  const totalAudits = totalAuditsResult.count
+  const latestAudits = latestAuditsResult.data
 
   return (
     <div style={{ maxWidth:640, margin:"0 auto", padding:"1.5rem 1rem" }}>

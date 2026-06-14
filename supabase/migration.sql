@@ -33,14 +33,17 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- RLS: users can read their own profile, admins can read all
+DROP POLICY IF EXISTS "users_read_own" ON public.profiles;
 CREATE POLICY "users_read_own" ON public.profiles
   FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "admins_read_all" ON public.profiles;
 CREATE POLICY "admins_read_all" ON public.profiles
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
   );
 
+DROP POLICY IF EXISTS "users_update_own" ON public.profiles;
 CREATE POLICY "users_update_own" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
@@ -56,9 +59,12 @@ CREATE TABLE IF NOT EXISTS public.magasins (
 
 ALTER TABLE public.magasins ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "all_read" ON public.magasins;
 CREATE POLICY "all_read" ON public.magasins FOR SELECT USING (true);
+DROP POLICY IF EXISTS "all_insert" ON public.magasins;
 CREATE POLICY "all_insert" ON public.magasins FOR INSERT
   WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "admin_update" ON public.magasins;
 CREATE POLICY "admin_update" ON public.magasins FOR UPDATE
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
@@ -84,21 +90,25 @@ CREATE TABLE IF NOT EXISTS public.audits (
 ALTER TABLE public.audits ENABLE ROW LEVEL SECURITY;
 
 -- Auditors see their own audits; managers/admins see all
+DROP POLICY IF EXISTS "audits_select" ON public.audits;
 CREATE POLICY "audits_select" ON public.audits
   FOR SELECT USING (
     auth.uid() = user_id OR
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('manager', 'admin'))
   );
 
+DROP POLICY IF EXISTS "audits_insert" ON public.audits;
 CREATE POLICY "audits_insert" ON public.audits
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "audits_update" ON public.audits;
 CREATE POLICY "audits_update" ON public.audits
   FOR UPDATE USING (
     auth.uid() = user_id OR
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('manager', 'admin'))
   );
 
+DROP POLICY IF EXISTS "audits_delete" ON public.audits;
 CREATE POLICY "audits_delete" ON public.audits
   FOR DELETE USING (
     auth.uid() = user_id OR
@@ -127,6 +137,7 @@ CREATE TABLE IF NOT EXISTS public.corrective_actions (
 
 ALTER TABLE public.corrective_actions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "actions_select" ON public.corrective_actions;
 CREATE POLICY "actions_select" ON public.corrective_actions
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.audits WHERE id = audit_id AND (
@@ -135,11 +146,13 @@ CREATE POLICY "actions_select" ON public.corrective_actions
     ))
   );
 
+DROP POLICY IF EXISTS "actions_insert" ON public.corrective_actions;
 CREATE POLICY "actions_insert" ON public.corrective_actions
   FOR INSERT WITH CHECK (
     EXISTS (SELECT 1 FROM public.audits WHERE id = audit_id AND user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "actions_update" ON public.corrective_actions;
 CREATE POLICY "actions_update" ON public.corrective_actions
   FOR UPDATE USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('manager', 'admin'))
@@ -158,11 +171,13 @@ CREATE TABLE IF NOT EXISTS public.audit_log (
 
 ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "log_admin_only" ON public.audit_log;
 CREATE POLICY "log_admin_only" ON public.audit_log
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
   );
 
+DROP POLICY IF EXISTS "log_insert" ON public.audit_log;
 CREATE POLICY "log_insert" ON public.audit_log
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
@@ -202,3 +217,56 @@ ALTER TABLE public.magasins ADD COLUMN IF NOT EXISTS type TEXT DEFAULT '';
 ALTER TABLE public.magasins ADD COLUMN IF NOT EXISTS zone TEXT DEFAULT '';
 ALTER TABLE public.audits ADD COLUMN IF NOT EXISTS ref TEXT DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_audits_ref ON public.audits(ref);
+
+-- 7. Performance indexes
+CREATE INDEX IF NOT EXISTS idx_audits_user_status_created
+  ON public.audits(user_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audits_created_desc
+  ON public.audits(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_actions_resolved_deadline
+  ON public.corrective_actions(resolved, deadline)
+  WHERE resolved = false;
+CREATE INDEX IF NOT EXISTS idx_audits_status
+  ON public.audits(status);
+CREATE INDEX IF NOT EXISTS idx_actions_deadline
+  ON public.corrective_actions(deadline)
+  WHERE deadline IS NOT NULL AND resolved = false;
+CREATE INDEX IF NOT EXISTS idx_actions_audit_resolved
+  ON public.corrective_actions(audit_id, resolved);
+
+-- 8. Atomic JSONB update function (avoids read-modify-write race conditions)
+CREATE OR REPLACE FUNCTION public.resolve_audit_item(p_audit_id UUID, p_item_id TEXT)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.audits
+  SET results = jsonb_set(
+    COALESCE(results, '{}'::jsonb),
+    ARRAY[p_item_id, 'resolved'],
+    'true'::jsonb
+  )
+  WHERE id = p_audit_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 9. Dashboard stats aggregate function
+CREATE OR REPLACE FUNCTION public.get_dashboard_stats(p_user_id UUID, p_is_admin BOOLEAN)
+RETURNS JSON AS $$
+DECLARE result JSON;
+BEGIN
+  SELECT json_build_object(
+    'total_audits', COUNT(*),
+    'avg_score', ROUND(AVG(score)),
+    'magasins_count', COUNT(DISTINCT magasin_name),
+    'overdue_actions', (
+      SELECT COUNT(*) FROM public.corrective_actions ca
+      INNER JOIN public.audits a2 ON ca.audit_id = a2.id
+      WHERE (p_is_admin OR a2.user_id = p_user_id)
+      AND ca.resolved = false
+      AND ca.deadline < CURRENT_DATE
+    )
+  ) INTO result
+  FROM public.audits
+  WHERE (p_is_admin OR user_id = p_user_id);
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -24,6 +24,10 @@ export async function proxy(req: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession();
 
+  if (session && req.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
   const authPages = ["/login", "/auth/login", "/auth/register", "/auth/confirm"]
   const protectedPrefixes = ["/dashboard", "/admin", "/audits", "/audit", "/actions", "/migration"]
 
