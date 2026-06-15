@@ -39,12 +39,17 @@ export function StoreAutocomplete({ value, onChange, placeholder }: Props) {
   const newInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    (async () => {
+    ;(async () => {
       try {
         const { createClient } = await import("@/lib/supabase/client")
-        const { data } = await createClient().from("magasins").select("name, type, zone").order("name")
+        const { data } = await createClient()
+          .from("magasins")
+          .select("name, type, zone")
+          .order("name")
         if (data && data.length > 0) setStores(data)
-      } catch { /* fallback to default */ }
+      } catch {
+        // Silently fall back to DEFAULT_STORES
+      }
     })()
   }, [])
 

@@ -9,27 +9,19 @@ export default async function AuditsPage() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect("/auth/login")
 
-  const svc = createServiceClient()
-  const { data: profile } = await svc
-    .from("profiles")
-    .select("role")
-    .eq("id", session.user.id)
-    .single()
+  const svc = createServiceClient();
+const { data: profile } = await svc.from("profiles").select("role").eq("id", session.user.id).single();
+const role = profile?.role || "auditeur";
+const isManagerOrAdmin = role === "manager" || role === "admin";
 
-  const role = profile?.role || "auditeur"
-  const isManagerOrAdmin = role === "manager" || role === "admin"
+let baseQuery = svc
+  .from("audits")
+  .select("id, ref, magasin_name, superviseur, date, score, status, created_at")
+  .order("created_at", { ascending: false })
+  .limit(100);
+if (!isManagerOrAdmin) baseQuery = baseQuery.eq("user_id", session.user.id);
 
-  let baseQuery = svc
-    .from("audits")
-    .select("id, ref, magasin_name, superviseur, date, score, status, created_at")
-    .order("created_at", { ascending: false })
-    .limit(100)
-
-  if (!isManagerOrAdmin) {
-    baseQuery = baseQuery.eq("user_id", session.user.id)
-  }
-
-  const { data: audits } = await baseQuery
+const { data: audits } = await baseQuery;
 
   const drafts = audits?.filter(a => a.status === "draft") || []
   const finals = audits?.filter(a => a.status === "final") || []

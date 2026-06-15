@@ -28,25 +28,22 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect("/auth/login")
 
-  const svc = createServiceClient()
-  const { data: profile } = await svc
-    .from("profiles")
-    .select("role")
-    .eq("id", session.user.id)
-    .single()
+  const svc = createServiceClient();
 
-  const role = profile?.role || "auditeur"
-  const isManagerOrAdmin = role === "manager" || role === "admin"
-
-  let query = svc
-    .from("audits")
+const [profileResult, auditResult] = await Promise.all([
+  svc.from("profiles").select("role").eq("id", session.user.id).single(),
+  svc.from("audits")
     .select("id, user_id, magasin_name, superviseur, responsable, date, heure, results, custom_items, counts, score, status, ref, created_at")
     .eq("id", id)
-    .single()
+    .single(),
+]);
 
-  const { data: audit } = await query
-  if (!audit) notFound()
-  if (!isManagerOrAdmin && audit.user_id !== session.user.id) redirect("/audits")
+const role = profileResult.data?.role || "auditeur";
+const isManagerOrAdmin = role === "manager" || role === "admin";
+const audit = auditResult.data;
+
+if (!audit) notFound();
+if (!isManagerOrAdmin && audit.user_id !== session.user.id) redirect("/audits");
 
   const results = (audit.results || {}) as Record<string, ResultItem>
   const customItems = (audit.custom_items || {}) as Record<string, { id: string; cat: string; label: string }[]>

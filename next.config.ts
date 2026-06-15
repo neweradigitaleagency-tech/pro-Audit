@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/:path*.(ico|svg|png|jpg|jpeg|webp|woff|woff2)",
+        source: "/:path*.(svg|ico|png|jpg|jpeg|webp|woff|woff2)",
         headers: [
           {
             key: "Cache-Control",
@@ -19,10 +19,6 @@ const nextConfig: NextConfig = {
 
   experimental: {
     optimizePackageImports: ["lucide-react", "sonner"],
-  },
-
-  logging: {
-    fetches: { fullUrl: true },
   },
 };
 

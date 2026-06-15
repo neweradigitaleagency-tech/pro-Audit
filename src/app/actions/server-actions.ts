@@ -31,15 +31,10 @@ export async function getFinalAudits(userId: string, isManagerOrAdmin: boolean) 
 
 export async function resolveAction(auditId: string, itemId: string) {
   const svc = createServiceClient()
-
+  
+  // Atomic update — no read-modify-write race condition
   await svc.rpc("resolve_audit_item", {
     p_audit_id: auditId,
     p_item_id: itemId,
-  } as Record<string, unknown>)
-
-  await svc
-    .from("corrective_actions")
-    .update({ resolved: true, updated_at: new Date().toISOString() })
-    .eq("audit_id", auditId)
-    .eq("item_label", itemId)
+  })
 }

@@ -18,28 +18,23 @@ export default async function AdminPage() {
 
   if (!myProfile || myProfile.role !== "admin") redirect("/dashboard")
 
-  const [profilesResult, magasinsResult, totalAuditsResult, latestAuditsResult] = await Promise.all([
-    svc.from("profiles")
-      .select("id, full_name, role, created_at")
-      .order("created_at", { ascending: false }),
+  const [profilesResult, magasinsResult, auditsCountResult, latestAuditsResult] = await Promise.all([
+  svc.from("profiles").select("id, full_name, role, created_at").order("created_at", { ascending: false }),
+  svc.from("magasins").select("id, name, created_at").order("name"),
+  svc.from("audits").select("id, score", { count: "exact" }),
+  svc.from("audits")
+    .select("id, magasin_name, score, created_at")
+    .order("created_at", { ascending: false })
+    .limit(5),
+]);
 
-    svc.from("magasins")
-      .select("id, name, created_at")
-      .order("name"),
-
-    svc.from("audits")
-      .select("id", { count: "exact", head: true }),
-
-    svc.from("audits")
-      .select("id, magasin_name, score, created_at")
-      .order("created_at", { ascending: false })
-      .limit(5),
-  ])
-
-  const profiles = profilesResult.data
-  const magasins = magasinsResult.data
-  const totalAudits = totalAuditsResult.count
-  const latestAudits = latestAuditsResult.data
+const profiles = profilesResult.data;
+const magasins = magasinsResult.data;
+const totalAudits = auditsCountResult.count ?? 0;
+const latestAudits = latestAuditsResult.data;
+const avgScore = auditsCountResult.data?.length
+  ? Math.round(auditsCountResult.data.reduce((s, a) => s + (a.score ?? 0), 0) / auditsCountResult.data.length)
+  : 0;
 
   return (
     <div style={{ maxWidth:640, margin:"0 auto", padding:"1.5rem 1rem" }}>
@@ -77,7 +72,7 @@ export default async function AdminPage() {
             <TrendingUp size={16} color="#d97706" />
             <span style={{ fontSize:12, color:"#6b7280" }}>Moy. score</span>
           </div>
-          <div style={{ fontSize:24, fontWeight:600, color:"#111" }}>—</div>
+          <div style={{ fontSize:24, fontWeight:600, color:"#111" }}>{avgScore}%</div>
         </div>
       </div>
 

@@ -2,11 +2,13 @@
   "regions": ["cdg1"],
   "functions": {
     "src/app/api/**": {
-      "maxDuration": 30,
-      "memory": 1024
+      "maxDuration": 30
     }
   },
   "crons": [
-    { "path": "/api/keepalive", "schedule": "0 9 */3 * *" }
+    {
+      "path": "/api/keepalive",
+      "schedule": "0 8 */3 * *"
+    }
   ]
 }

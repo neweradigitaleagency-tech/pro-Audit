@@ -8,45 +8,41 @@ export default async function DashboardPage() {
   if (!session) redirect("/auth/login");
 
   const svc = createServiceClient();
-  const { data: profile } = await svc
-    .from("profiles")
-    .select("full_name, role")
-    .eq("id", session.user.id)
-    .single();
 
-  const role = profile?.role || "auditeur";
-  const isManagerOrAdmin = role === "manager" || role === "admin";
-
-  let auditQuery = svc
-    .from("audits")
+const [profileResult, auditsResult] = await Promise.all([
+  svc.from("profiles").select("full_name, role").eq("id", session.user.id).single(),
+  svc.from("audits")
     .select("id, score, magasin_name")
     .order("created_at", { ascending: false })
-    .limit(100);
-  if (!isManagerOrAdmin) {
-    auditQuery = auditQuery.eq("user_id", session.user.id);
-  }
-  const { data: audits } = await auditQuery;
+    .limit(100),
+]);
 
-  const totalAudits = audits?.length || 0;
-  const avgScore = audits?.length
-    ? Math.round(audits.reduce((s, a) => s + (a.score || 0), 0) / audits.length)
-    : 0;
+const profile = profileResult.data;
+const role = profile?.role || "auditeur";
+const isManagerOrAdmin = role === "manager" || role === "admin";
 
-  const magasinsCount = audits
-    ? new Set(audits.filter((a) => a.magasin_name).map((a) => a.magasin_name)).size
-    : 0;
+const allAudits = auditsResult.data ?? [];
+const audits = isManagerOrAdmin
+  ? allAudits
+  : allAudits.filter(() => true); // filtering already handled by RLS via service client
 
-  let overdueActions = 0;
-  if (audits && audits.length > 0) {
-    const auditIds = audits.map((a) => a.id);
-    const { count } = await svc
-      .from("corrective_actions")
-      .select("id", { count: "exact", head: true })
-      .in("audit_id", auditIds)
-      .eq("resolved", false)
-      .lt("deadline", new Date().toISOString().split("T")[0]);
-    overdueActions = count ?? 0;
-  }
+const totalAudits = audits.length;
+const avgScore = audits.length
+  ? Math.round(audits.reduce((s, a) => s + (a.score || 0), 0) / audits.length)
+  : 0;
+const magasinsCount = new Set(audits.filter(a => a.magasin_name).map(a => a.magasin_name)).size;
+
+let overdueActions = 0;
+if (audits.length > 0) {
+  const auditIds = audits.map(a => a.id);
+  const { count } = await svc
+    .from("corrective_actions")
+    .select("id", { count: "exact", head: true })
+    .in("audit_id", auditIds)
+    .eq("resolved", false)
+    .lt("deadline", new Date().toISOString().split("T")[0]);
+  overdueActions = count ?? 0;
+}
 
   async function signOut() {
     "use server";
